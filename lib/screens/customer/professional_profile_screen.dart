@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:telvo/models/user_model.dart';
+import 'package:telvo/models/professional_display.dart';
 import 'package:telvo/providers/auth_provider.dart';
 import 'package:telvo/providers/chat_provider.dart';
 import 'package:telvo/providers/user_provider.dart';
