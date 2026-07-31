@@ -17,6 +17,7 @@ import 'package:telvo/theme/app_theme.dart';
 import 'package:telvo/config/app_config.dart';
 import 'package:telvo/config/routes.dart';
 import 'package:telvo/services/notification_service.dart';
+import 'package:telvo/services/app_update_service.dart';
 import 'package:telvo/screens/splash_screen.dart';
 import 'package:telvo/screens/welcome_screen.dart';
 import 'package:telvo/screens/auth/login_screen.dart';
@@ -57,6 +58,44 @@ import 'package:telvo/admin/admin_main.dart';
 
 // Global navigator key for accessing context from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+void _checkForAppUpdate() {
+  final updateService = AppUpdateService();
+  updateService.checkForUpdate().then((update) {
+    final context = navigatorKey.currentContext;
+    if (update == null || context == null || !context.mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: !update.isForceUpdate,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Update available'),
+            content: Text(
+              update.releaseNotes.isEmpty
+                  ? 'A newer version of TELVO is available (${update.version}).'
+                  : 'A newer version of TELVO is available (${update.version}).\n\n${update.releaseNotes}',
+            ),
+            actions: [
+              if (!update.isForceUpdate)
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Later'),
+                ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop();
+                  await updateService.openDownloadUrl(update.apkUrl);
+                },
+                child: const Text('Update now'),
+              ),
+            ],
+          );
+        },
+      );
+    });
+  });
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,8 +146,25 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+void initAppUpdateCheck() {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _checkForAppUpdate();
+  });
+}
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    initAppUpdateCheck();
+  }
 
   @override
   Widget build(BuildContext context) {

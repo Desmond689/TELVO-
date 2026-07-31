@@ -77,6 +77,9 @@ dependencies:
   # Powers tel:/dial actions (emergency contacts, SOS, chat call buttons)
   url_launcher: ^6.3.1
 
+  # Used by the in-app update flow to compare installed build numbers
+  package_info_plus: ^8.6.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
