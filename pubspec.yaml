@@ -78,7 +78,7 @@ dependencies:
   url_launcher: ^6.3.1
 
   # Used by the in-app update flow to compare installed build numbers
-  package_info_plus: ^8.6.0
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
