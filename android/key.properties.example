@@ -1,0 +1,7 @@
+# Copy this file to android/key.properties (same folder) and fill in your
+# real values. NEVER commit android/key.properties or the .jks file itself -
+# both are already covered by .gitignore.
+storePassword=yourStorePassword
+keyPassword=yourKeyPassword
+keyAlias=telvo
+storeFile=../telvo-release-key.jks

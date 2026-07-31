@@ -1,0 +1,40 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Flutter SDK (pinned)
+        run: |
+          set -e
+          echo "Installing Flutter (stable branch)"
+          git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter
+          # Make flutter available in this step immediately and for following steps
+          export PATH="$HOME/flutter/bin:$PATH"
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
+          flutter --version
+          flutter precache
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Prepare `.env` file for CI build
+        run: cp .env.example .env
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

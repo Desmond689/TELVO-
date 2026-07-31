@@ -1,0 +1,249 @@
+// lib/models/user_model.dart
+class UserModel {
+  UserModel({
+    this.id,
+    this.username,
+    this.phoneNumber,
+    this.email,
+    this.fullName,
+    this.profilePhoto,
+    this.city,
+    this.neighborhood,
+    this.language,
+    this.userType,
+    this.mode,
+    this.isVerified = false,
+    this.isPhoneVerified = false,
+    this.isEmailVerified = false,
+    this.isIdVerified = false,
+    this.isSelfieVerified = false,
+    this.trustedContacts = const [],
+    this.createdAt,
+    this.lastActive,
+    this.isOnline = false,
+    this.fcmToken,
+    this.latitude,
+    this.longitude,
+    this.geoHash,
+    this.category,
+    this.skills,
+    this.yearsOfExperience,
+    this.description,
+    this.serviceAreas,
+    this.portfolioPhotos,
+    this.certificates,
+    this.availabilitySchedule,
+    this.availabilityStatus,
+    this.emergencyServices = false,
+    this.rating,
+    this.jobsCompleted,
+    this.responseRate,
+    this.responseTime,
+  });
+
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'],
+      username: map['username'],
+      phoneNumber: map['phoneNumber'],
+      email: map['email'],
+      fullName: map['fullName'],
+      profilePhoto: map['profilePhoto'],
+      city: map['city'],
+      neighborhood: map['neighborhood'],
+      language: map['language'],
+      userType: map['userType'],
+      mode: map['mode'],
+      isVerified: map['isVerified'] ?? false,
+      isPhoneVerified: map['isPhoneVerified'] ?? false,
+      isEmailVerified: map['isEmailVerified'] ?? false,
+      isIdVerified: map['isIdVerified'] ?? false,
+      isSelfieVerified: map['isSelfieVerified'] ?? false,
+      trustedContacts: List<String>.from(map['trustedContacts'] ?? []),
+      createdAt: map['createdAt']?.toDate(),
+      lastActive: map['lastActive']?.toDate(),
+      isOnline: map['isOnline'] ?? false,
+      fcmToken: map['fcmToken'],
+      latitude: map['latitude']?.toDouble(),
+      longitude: map['longitude']?.toDouble(),
+      geoHash: map['geoHash'],
+      category: map['category'],
+      skills: List<String>.from(map['skills'] ?? []),
+      yearsOfExperience: map['yearsOfExperience'],
+      description: map['description'],
+      serviceAreas: List<String>.from(map['serviceAreas'] ?? []),
+      availabilityStatus: map['availabilityStatus'],
+      portfolioPhotos: List<String>.from(map['portfolioPhotos'] ?? []),
+      certificates: List<String>.from(map['certificates'] ?? []),
+      availabilitySchedule: map['availabilitySchedule'],
+      emergencyServices: map['emergencyServices'] ?? false,
+      rating: map['rating']?.toDouble(),
+      jobsCompleted: map['jobsCompleted'],
+      responseRate: map['responseRate']?.toDouble(),
+      responseTime: map['responseTime'],
+    );
+  }
+  final String? id;
+  final String? username;
+  final String? phoneNumber;
+  final String? email;
+  final String? fullName;
+  final String? profilePhoto;
+  final String? city;
+  final String? neighborhood;
+  final String? language;
+  final String? userType; // 'customer', 'professional', 'both'
+  final String? mode; // 'customer', 'professional'
+  final bool isVerified;
+  final bool isPhoneVerified;
+  final bool isEmailVerified;
+  final bool isIdVerified;
+  final bool isSelfieVerified;
+  final List<String> trustedContacts;
+  final DateTime? createdAt;
+  final DateTime? lastActive;
+  final bool isOnline;
+  final String? fcmToken;
+
+  // Location
+  final double? latitude;
+  final double? longitude;
+  final String? geoHash;
+
+  // Professional specific fields
+  final String? category;
+  final List<String>? skills;
+  final int? yearsOfExperience;
+  final String? description;
+  final List<String>? serviceAreas;
+  final List<String>? portfolioPhotos;
+  final List<String>? certificates;
+  final Map<String, dynamic>? availabilitySchedule;
+  final bool emergencyServices;
+  final double? rating;
+  final int? jobsCompleted;
+  final double? responseRate;
+  final int? responseTime;
+  final String? availabilityStatus;
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'username': username,
+    'phoneNumber': phoneNumber,
+    'email': email,
+    'fullName': fullName,
+    'profilePhoto': profilePhoto,
+    'city': city,
+    'neighborhood': neighborhood,
+    'language': language,
+    'userType': userType,
+    'mode': mode,
+    'isVerified': isVerified,
+    'isPhoneVerified': isPhoneVerified,
+    'isEmailVerified': isEmailVerified,
+    'isIdVerified': isIdVerified,
+    'isSelfieVerified': isSelfieVerified,
+    'trustedContacts': trustedContacts,
+    'createdAt': createdAt,
+    'lastActive': lastActive,
+    'isOnline': isOnline,
+    'fcmToken': fcmToken,
+    'latitude': latitude,
+    'longitude': longitude,
+    'geoHash': geoHash,
+    'category': category,
+    'skills': skills,
+    'yearsOfExperience': yearsOfExperience,
+    'description': description,
+    'serviceAreas': serviceAreas,
+    'portfolioPhotos': portfolioPhotos,
+    'certificates': certificates,
+    'availabilitySchedule': availabilitySchedule,
+    'availabilityStatus': availabilityStatus,
+    'emergencyServices': emergencyServices,
+    'rating': rating,
+    'jobsCompleted': jobsCompleted,
+    'responseRate': responseRate,
+    'responseTime': responseTime,
+  };
+
+  UserModel copyWith({
+    String? id,
+    String? username,
+    String? phoneNumber,
+    String? email,
+    String? fullName,
+    String? profilePhoto,
+    String? city,
+    String? neighborhood,
+    String? language,
+    String? userType,
+    String? mode,
+    bool? isVerified,
+    bool? isPhoneVerified,
+    bool? isEmailVerified,
+    bool? isIdVerified,
+    bool? isSelfieVerified,
+    List<String>? trustedContacts,
+    DateTime? createdAt,
+    DateTime? lastActive,
+    bool? isOnline,
+    String? fcmToken,
+    double? latitude,
+    double? longitude,
+    String? geoHash,
+    String? category,
+    List<String>? skills,
+    int? yearsOfExperience,
+    String? description,
+    List<String>? serviceAreas,
+    List<String>? portfolioPhotos,
+    List<String>? certificates,
+    Map<String, dynamic>? availabilitySchedule,
+    String? availabilityStatus,
+    bool? emergencyServices,
+    double? rating,
+    int? jobsCompleted,
+    double? responseRate,
+    int? responseTime,
+  }) => UserModel(
+    id: id ?? this.id,
+    username: username ?? this.username,
+    phoneNumber: phoneNumber ?? this.phoneNumber,
+    email: email ?? this.email,
+    fullName: fullName ?? this.fullName,
+    profilePhoto: profilePhoto ?? this.profilePhoto,
+    city: city ?? this.city,
+    neighborhood: neighborhood ?? this.neighborhood,
+    language: language ?? this.language,
+    userType: userType ?? this.userType,
+    mode: mode ?? this.mode,
+    isVerified: isVerified ?? this.isVerified,
+    isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
+    isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+    isIdVerified: isIdVerified ?? this.isIdVerified,
+    isSelfieVerified: isSelfieVerified ?? this.isSelfieVerified,
+    trustedContacts: trustedContacts ?? this.trustedContacts,
+    createdAt: createdAt ?? this.createdAt,
+    lastActive: lastActive ?? this.lastActive,
+    isOnline: isOnline ?? this.isOnline,
+    fcmToken: fcmToken ?? this.fcmToken,
+    latitude: latitude ?? this.latitude,
+    longitude: longitude ?? this.longitude,
+    geoHash: geoHash ?? this.geoHash,
+    category: category ?? this.category,
+    skills: skills ?? this.skills,
+    yearsOfExperience: yearsOfExperience ?? this.yearsOfExperience,
+    description: description ?? this.description,
+    serviceAreas: serviceAreas ?? this.serviceAreas,
+    portfolioPhotos: portfolioPhotos ?? this.portfolioPhotos,
+    certificates: certificates ?? this.certificates,
+    availabilitySchedule: availabilitySchedule ?? this.availabilitySchedule,
+    availabilityStatus: availabilityStatus ?? this.availabilityStatus,
+    emergencyServices: emergencyServices ?? this.emergencyServices,
+    rating: rating ?? this.rating,
+    jobsCompleted: jobsCompleted ?? this.jobsCompleted,
+    responseRate: responseRate ?? this.responseRate,
+    responseTime: responseTime ?? this.responseTime,
+  );
+}

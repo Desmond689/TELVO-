@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "322741953399",
+    "project_id": "telvo-452fd",
+    "storage_bucket": "telvo-452fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:322741953399:android:0194c9c53648f5ef9d7772",
+        "android_client_info": {
+          "package_name": "com.telvoapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTns3XX3Ll0YA-EXMyCVFFwOcvaCg9FVw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
