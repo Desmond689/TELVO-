@@ -39,7 +39,10 @@ class UserProvider extends ChangeNotifier {
 
     return query.snapshots().map((snapshot) {
       final users = snapshot.docs
-          .map((doc) => UserModel.fromMap(doc.data()))
+          .map((doc) {
+            final user = UserModel.fromMap(doc.data());
+            return user.copyWith(id: doc.id);
+          })
           .where((user) {
             if (minRating != null && (user.rating ?? 0) < minRating) {
               return false;
@@ -76,7 +79,10 @@ class UserProvider extends ChangeNotifier {
 
       final snapshot = await query.get();
       final users = snapshot.docs
-          .map((doc) => UserModel.fromMap(doc.data()))
+          .map((doc) {
+            final user = UserModel.fromMap(doc.data());
+            return user.copyWith(id: doc.id);
+          })
           .toList();
       users.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
       _professionals = users;
@@ -95,7 +101,7 @@ class UserProvider extends ChangeNotifier {
 
       final doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists) {
-        _selectedProfessional = UserModel.fromMap(doc.data()!);
+        _selectedProfessional = UserModel.fromMap(doc.data()!).copyWith(id: doc.id);
       }
 
       _setLoading(false);
@@ -153,7 +159,7 @@ class UserProvider extends ChangeNotifier {
           .get();
 
       _favorites = snapshot.docs
-          .map((doc) => UserModel.fromMap(doc.data()))
+          .map((doc) => UserModel.fromMap(doc.data()).copyWith(id: doc.id))
           .toList();
       _setLoading(false);
       notifyListeners();

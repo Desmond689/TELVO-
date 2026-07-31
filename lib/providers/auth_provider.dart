@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:telvo/models/user_model.dart';
 import 'package:telvo/services/api_service.dart';
@@ -16,7 +15,6 @@ class AuthProvider extends ChangeNotifier {
   }
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   UserModel? _currentUser;
@@ -49,6 +47,11 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       _setError(e.toString());
+    } finally {
+      if (!_isInitialized) {
+        _isInitialized = true;
+        if (!_initCompleter.isCompleted) _initCompleter.complete();
+      }
     }
 
     _auth.authStateChanges().listen(
@@ -356,36 +359,22 @@ class AuthProvider extends ChangeNotifier {
           fileName ??
           '${_currentUser!.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      try {
-        final response = await ApiService().uploadImage(
-          file: file,
-          folder: folder,
-          fileName: storageFileName,
-        );
+      final response = await ApiService().uploadImage(
+        file: file,
+        folder: folder,
+        fileName: storageFileName,
+      );
 
-        final uploadedUrl = response['data']?['url'] ?? response['url'];
-        if (uploadedUrl is String && uploadedUrl.isNotEmpty) {
-          return uploadedUrl;
-        }
-      } catch (e) {
-        // Fall back to Firebase Storage if the backend is unavailable.
+      final uploadedUrl = response['data']?['url'] ?? response['url'];
+      if (uploadedUrl is String && uploadedUrl.isNotEmpty) {
+        return uploadedUrl;
       }
 
-      final ref = _storage.ref().child(folder).child(storageFileName);
-      final contentType = _contentTypeForPath(file.path);
-      await ref.putFile(file, SettableMetadata(contentType: contentType));
-      return ref.getDownloadURL();
+      throw Exception('Upload failed. No URL returned from backend.');
     } catch (e) {
       _setError(e.toString());
       return null;
     }
-  }
-
-  String _contentTypeForPath(String filePath) {
-    final lower = filePath.toLowerCase();
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    return 'image/jpeg';
   }
 
   Future<String?> uploadProfilePhoto(String filePath) async {

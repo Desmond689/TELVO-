@@ -314,7 +314,7 @@ class _JobPostScreenState extends State<JobPostScreen> {
   Future<void> _pickImages() async {
     final images = await _picker.pickMultiImage();
     setState(() {
-      _selectedImages = images;
+      _selectedImages = images ?? [];
     });
   }
 

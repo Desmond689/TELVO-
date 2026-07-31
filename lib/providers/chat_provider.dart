@@ -19,21 +19,9 @@ class ChatProvider extends ChangeNotifier {
 
   Stream<List<ChatThread>> getUserThreads(String userId) {
     final streams = [
-      _firestore
-          .collection('chats')
-          .where('user1Id', isEqualTo: userId)
-          .orderBy('lastMessageTime', descending: true)
-          .snapshots(),
-      _firestore
-          .collection('chats')
-          .where('user2Id', isEqualTo: userId)
-          .orderBy('lastMessageTime', descending: true)
-          .snapshots(),
-      _firestore
-          .collection('chats')
-          .where('participantIds', arrayContains: userId)
-          .orderBy('lastMessageTime', descending: true)
-          .snapshots(),
+      _firestore.collection('chats').where('user1Id', isEqualTo: userId).snapshots(),
+      _firestore.collection('chats').where('user2Id', isEqualTo: userId).snapshots(),
+      _firestore.collection('chats').where('participantIds', arrayContains: userId).snapshots(),
     ];
 
     return Rx.combineLatestList<QuerySnapshot<Map<String, dynamic>>>(

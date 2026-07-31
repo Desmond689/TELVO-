@@ -1,62 +1,46 @@
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:telvo/config/firebase_config.dart';
 import 'package:telvo/services/api_service.dart';
 
 class StorageService {
-  final FirebaseStorage _storage = FirebaseConfig.storage;
+  Future<String?> _uploadViaBackend({
+    required String folder,
+    required String fileName,
+    required File file,
+  }) async {
+    final response = await ApiService().uploadImage(
+      file: file,
+      folder: folder,
+      fileName: fileName,
+    );
+
+    final uploadedUrl = response['data']?['url'] ?? response['url'];
+    if (uploadedUrl is String && uploadedUrl.isNotEmpty) {
+      return uploadedUrl;
+    }
+    return null;
+  }
 
   Future<String?> uploadProfilePhoto(String userId, XFile image) async {
     try {
-      final file = File(image.path);
-      final response = await ApiService().uploadImage(
-        file: file,
+      return await _uploadViaBackend(
+        file: File(image.path),
         folder: 'profile_photos',
         fileName: '$userId.jpg',
       );
-
-      final uploadedUrl = response['data']?['url'] ?? response['url'];
-      if (uploadedUrl is String && uploadedUrl.isNotEmpty) {
-        return uploadedUrl;
-      }
-    } catch (_) {}
-
-    try {
-      final ref = _storage.ref().child('profile_photos').child('$userId.jpg');
-
-      await ref.putFile(File(image.path));
-      return await ref.getDownloadURL();
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
   Future<String?> uploadJobPhoto(String jobId, XFile image, int index) async {
     try {
-      final file = File(image.path);
-      final response = await ApiService().uploadImage(
-        file: file,
+      return await _uploadViaBackend(
+        file: File(image.path),
         folder: 'job_photos/$jobId',
         fileName: '$index.jpg',
       );
-
-      final uploadedUrl = response['data']?['url'] ?? response['url'];
-      if (uploadedUrl is String && uploadedUrl.isNotEmpty) {
-        return uploadedUrl;
-      }
-    } catch (_) {}
-
-    try {
-      final ref = _storage
-          .ref()
-          .child('job_photos')
-          .child(jobId)
-          .child('$index.jpg');
-
-      await ref.putFile(File(image.path));
-      return await ref.getDownloadURL();
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
@@ -78,57 +62,29 @@ class StorageService {
     int index,
   ) async {
     try {
-      final file = File(image.path);
-      final response = await ApiService().uploadImage(
-        file: file,
+      return await _uploadViaBackend(
+        file: File(image.path),
         folder: 'portfolio_photos/$userId',
         fileName: '$index.jpg',
       );
-
-      final uploadedUrl = response['data']?['url'] ?? response['url'];
-      if (uploadedUrl is String && uploadedUrl.isNotEmpty) {
-        return uploadedUrl;
-      }
-    } catch (_) {}
-
-    try {
-      final ref = _storage
-          .ref()
-          .child('portfolio_photos')
-          .child(userId)
-          .child('$index.jpg');
-
-      await ref.putFile(File(image.path));
-      return await ref.getDownloadURL();
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
   Future<void> deleteFile(String path) async {
-    try {
-      final ref = _storage.ref().child(path);
-      await ref.delete();
-    } catch (e) {
-      // File might not exist
-    }
+    // Deletion via backend or Cloudinary API would need a server endpoint.
+    // Firebase Storage deletion is intentionally not used here because uploads
+    // should go through the backend Cloudinary route.
   }
 
   Future<void> deleteUserFolder(String userId) async {
-    try {
-      final ref = _storage.ref().child('profile_photos').child('$userId.jpg');
-      await ref.delete();
-    } catch (e) {
-      // File might not exist
-    }
+    // Cloudinary folder deletion is not implemented in the mobile client.
   }
 
   Future<String> getDownloadUrl(String path) async {
-    try {
-      final ref = _storage.ref().child(path);
-      return await ref.getDownloadURL();
-    } catch (e) {
-      return '';
-    }
+    // Cloudinary URLs are returned directly by the backend; no client-side
+    // download URL fetch is needed.
+    return '';
   }
 }

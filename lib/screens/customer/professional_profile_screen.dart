@@ -24,8 +24,20 @@ class _ProfessionalProfileScreenState extends State<ProfessionalProfileScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _professional = ModalRoute.of(context)?.settings.arguments as UserModel?;
-    if (_professional != null) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is UserModel) {
+      _professional = args;
+    } else if (args is Professional) {
+      _professional = UserModel(
+        id: null,
+        fullName: args.name,
+        category: args.title,
+        profilePhoto: args.photoUrl,
+        isVerified: args.verified,
+      );
+    }
+
+    if (_professional?.id != null) {
       context.read<UserProvider>().getProfessionalDetails(_professional!.id!);
     }
   }

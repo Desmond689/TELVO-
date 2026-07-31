@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:telvo/providers/chat_provider.dart';
 import 'package:telvo/providers/auth_provider.dart';
+import 'package:telvo/services/api_service.dart';
 import 'package:telvo/models/chat_model.dart';
 import 'package:telvo/models/user_model.dart';
 import 'package:telvo/utils/helpers.dart';
@@ -118,37 +118,45 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (userId == null || _thread == null) return;
 
-    final fallbackReceiverId = _thread!.participantIds?.firstWhere(
-      (id) => id != userId,
-      orElse: () => '',
-    );
-    final receiverId = _thread!.user1Id == userId
-        ? _thread!.user2Id
-        : _thread!.user1Id;
-    final resolvedReceiverId = receiverId ??
-        (fallbackReceiverId != null && fallbackReceiverId.isNotEmpty
-            ? fallbackReceiverId
-            : null);
+    final receiverId = _resolveReceiverId(userId);
+    if (receiverId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to determine recipient.')),
+        );
+      }
+      return;
+    }
 
     final message = ChatMessage(
       chatId: _thread!.id,
       senderId: userId,
-      receiverId: resolvedReceiverId,
+      receiverId: receiverId,
       message: _messageController.text.trim(),
       timestamp: DateTime.now(),
     );
 
-    await context.read<ChatProvider>().sendMessage(message);
-    _messageController.clear();
+    try {
+      await context.read<ChatProvider>().sendMessage(message);
+      _messageController.clear();
 
-    // Scroll to bottom
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    });
+      // Scroll to bottom
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Message failed to send: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   Future<void> _attachImage() async {
@@ -167,20 +175,25 @@ class _ChatScreenState extends State<ChatScreen> {
     ).showSnackBar(const SnackBar(content: Text('Sending photo...')));
 
     try {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('chat_images')
-          .child(_thread!.id!)
-          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await ref.putFile(File(picked.path));
-      final url = await ref.getDownloadURL();
+      final response = await ApiService().uploadImage(
+        file: File(picked.path),
+        folder: 'chat_images/${_thread!.id}',
+        fileName: '${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      final url = response['data']?['url'] ?? response['url'];
+      if (url is! String || url.isEmpty) {
+        throw Exception('Upload failed');
+      }
+
+      final receiverId = _resolveReceiverId(userId);
+      if (receiverId.isEmpty) {
+        throw Exception('Unable to determine image recipient.');
+      }
 
       final message = ChatMessage(
         chatId: _thread!.id,
         senderId: userId,
-        receiverId: _thread!.user1Id == userId
-            ? _thread!.user2Id
-            : _thread!.user1Id,
+        receiverId: receiverId,
         type: 'image',
         mediaUrl: url,
         timestamp: DateTime.now(),
@@ -194,6 +207,24 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     }
+  }
+
+  String _resolveReceiverId(String currentUserId) {
+    if (_thread == null) return '';
+    final participantIds = _thread!.participantIds;
+    if (participantIds != null && participantIds.isNotEmpty) {
+      final receiverId = participantIds
+          .firstWhere((id) => id != currentUserId, orElse: () => '');
+      if (receiverId.isNotEmpty) return receiverId;
+    }
+
+    if (_thread!.user1Id != null && _thread!.user2Id != null) {
+      return _thread!.user1Id == currentUserId
+          ? _thread!.user2Id ?? ''
+          : _thread!.user1Id ?? '';
+    }
+
+    return '';
   }
 
   @override
