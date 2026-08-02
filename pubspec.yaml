@@ -83,6 +83,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.2
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -96,6 +97,11 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - .env
+    - assets/images/
+    - assets/icons/
+    - assets/translations/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -105,12 +111,6 @@ flutter:
   # REQUIRED: without this section, dotenv.load(fileName: ".env") in main.dart
   # cannot find the file (flutter_dotenv loads it as an asset), and every
   # Image.asset(...) call in the app throws "Unable to load asset" at runtime.
-  assets:
-    - .env
-    - assets/images/
-    - assets/icons/
-    - assets/translations/
-
   # REQUIRED: app_theme.dart sets fontFamily: 'Poppins' everywhere, but the
   # family was never registered here, so it was silently falling back to the
   # default system font.
@@ -124,3 +124,10 @@ flutter:
           weight: 600
         - asset: assets/fonts/Poppins-Bold.ttf
           weight: 700
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/app logo.png"

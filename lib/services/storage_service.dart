@@ -13,20 +13,43 @@ import 'package:telvo/utils/helpers.dart';
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<String> _uploadToFirebaseStorage({
+  Future<String> _uploadToCloudinary({
     required String folder,
     required String fileName,
     required File file,
   }) async {
-    final ref = _storage.ref().child('$folder/$fileName');
-    await ref.putFile(
-      file,
-      SettableMetadata(
-        contentType: 'image/jpeg',
-        cacheControl: 'public,max-age=31536000',
+    final cloudName = AppConfig.cloudinaryCloudName;
+    final uploadPreset = AppConfig.cloudinaryUploadPreset;
+    if (cloudName.isEmpty || uploadPreset.isEmpty) {
+      throw Exception('Cloudinary is not configured');
+    }
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload'),
+    );
+    request.fields['upload_preset'] = uploadPreset;
+    request.fields['folder'] = folder;
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file',
+        file.path,
+        filename: fileName,
       ),
     );
-    return await ref.getDownloadURL();
+
+    final response = await request.send();
+    final body = await response.stream.bytesToString();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Cloudinary upload failed: $body');
+    }
+
+    final json = jsonDecode(body) as Map<String, dynamic>;
+    final url = json['secure_url'] as String?;
+    if (url == null || url.isEmpty) {
+      throw Exception('Cloudinary returned no secure URL');
+    }
+    return url;
   }
 
   /// Uploads a [File] directly to Firebase Storage and returns the public
@@ -84,7 +107,7 @@ class StorageService {
   /// Uploads a profile photo and returns the public download URL.
   Future<String?> uploadProfilePhoto(String userId, XFile image) async {
     try {
-      return await _uploadToFirebaseStorage(
+      return await _uploadToCloudinary(
         file: File(image.path),
         folder: 'profile_photos',
         fileName: '$userId.jpg',
@@ -96,7 +119,7 @@ class StorageService {
 
   Future<String?> uploadJobPhoto(String jobId, XFile image, int index) async {
     try {
-      return await _uploadToFirebaseStorage(
+      return await _uploadToCloudinary(
         file: File(image.path),
         folder: 'job_photos/$jobId',
         fileName: '$index.jpg',
@@ -123,7 +146,7 @@ class StorageService {
     int index,
   ) async {
     try {
-      return await _uploadToFirebaseStorage(
+      return await _uploadToCloudinary(
         file: File(image.path),
         folder: 'portfolio_photos/$userId',
         fileName: '$index.jpg',
@@ -138,7 +161,7 @@ class StorageService {
     try {
       final fileName =
           '${DateTime.now().millisecondsSinceEpoch}_${image.name.replaceAll(RegExp(r'[^a-zA-Z0-9.]'), '_')}';
-      return await _uploadToFirebaseStorage(
+      return await _uploadToCloudinary(
         file: File(image.path),
         folder: 'chat_images/$chatId',
         fileName: fileName,
