@@ -36,6 +36,24 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _currentUser != null;
   bool get isInitialized => _isInitialized;
 
+  String _resolveMode(UserModel? user) {
+    final userType = user?.userType?.toLowerCase();
+    final mode = user?.mode?.toLowerCase();
+    if (mode == 'professional' || mode == 'customer') {
+      return mode;
+    }
+    if (userType == 'professional') {
+      return 'professional';
+    }
+    if (userType == 'both') {
+      return 'customer';
+    }
+    return 'customer';
+  }
+
+  bool get isProfessionalMode => _resolveMode(_currentUser) == 'professional';
+  bool get canSwitchModes => _currentUser?.userType?.toLowerCase() == 'both';
+
   /// Resolves once the initial session check (Firebase Auth + Firestore
   /// profile load, if any) has completed. Callers can await this instead
   /// of guessing with a delay.
@@ -145,6 +163,9 @@ class AuthProvider extends ChangeNotifier {
       final user = credential.user;
       if (user == null) throw Exception('Could not create account.');
 
+      final resolvedMode = userType == 'professional'
+          ? 'professional'
+          : 'customer';
       final newUser = UserModel(
         id: user.uid,
         username: normalizedUsername,
@@ -152,6 +173,7 @@ class AuthProvider extends ChangeNotifier {
         fullName: fullName.trim(),
         phoneNumber: phoneNumber.trim(),
         userType: userType,
+        mode: userType == 'both' ? 'customer' : resolvedMode,
         createdAt: DateTime.now(),
       );
       await _firestore.collection('users').doc(user.uid).set(newUser.toMap());
@@ -316,32 +338,104 @@ class AuthProvider extends ChangeNotifier {
 
       if (_currentUser == null) throw Exception('User not authenticated');
 
+      final fullName = data.containsKey('fullName')
+          ? data['fullName'] as String?
+          : _currentUser!.fullName;
+      final phoneNumber = data.containsKey('phoneNumber')
+          ? data['phoneNumber'] as String?
+          : _currentUser!.phoneNumber;
+      final profilePhoto = data.containsKey('profilePhoto')
+          ? data['profilePhoto'] as String?
+          : _currentUser!.profilePhoto;
+      final city = data.containsKey('city')
+          ? data['city'] as String?
+          : _currentUser!.city;
+      final neighborhood = data.containsKey('neighborhood')
+          ? data['neighborhood'] as String?
+          : _currentUser!.neighborhood;
+      final language = data.containsKey('language')
+          ? data['language'] as String?
+          : _currentUser!.language;
+      final userType = data.containsKey('userType')
+          ? data['userType'] as String?
+          : _currentUser!.userType;
+      final mode = data.containsKey('mode')
+          ? data['mode'] as String?
+          : _currentUser!.mode;
+      final category = data.containsKey('category')
+          ? data['category'] as String?
+          : _currentUser!.category;
+      final skills = data.containsKey('skills')
+          ? List<String>.from(data['skills'] ?? [])
+          : _currentUser!.skills;
+      final yearsOfExperience = data.containsKey('yearsOfExperience')
+          ? data['yearsOfExperience'] as int?
+          : _currentUser!.yearsOfExperience;
+      final description = data.containsKey('description')
+          ? data['description'] as String?
+          : _currentUser!.description;
+      final serviceAreas = data.containsKey('serviceAreas')
+          ? List<String>.from(data['serviceAreas'] ?? [])
+          : _currentUser!.serviceAreas;
+      final portfolioPhotos = data.containsKey('portfolioPhotos')
+          ? List<String>.from(data['portfolioPhotos'] ?? [])
+          : _currentUser!.portfolioPhotos;
+      final certificates = data.containsKey('certificates')
+          ? List<String>.from(data['certificates'] ?? [])
+          : _currentUser!.certificates;
+      final availabilitySchedule = data.containsKey('availabilitySchedule')
+          ? Map<String, dynamic>.from(data['availabilitySchedule'] ?? {})
+          : _currentUser!.availabilitySchedule;
+      final availabilityStatus = data.containsKey('availabilityStatus')
+          ? data['availabilityStatus'] as String?
+          : _currentUser!.availabilityStatus;
+      final isOnline = data.containsKey('isOnline')
+          ? data['isOnline'] as bool?
+          : _currentUser!.isOnline;
+      final emergencyServices = data.containsKey('emergencyServices')
+          ? data['emergencyServices'] as bool?
+          : _currentUser!.emergencyServices;
+      final trustedContacts = data.containsKey('trustedContacts')
+          ? List<String>.from(data['trustedContacts'] ?? [])
+          : _currentUser!.trustedContacts;
+      final blockedUsers = data.containsKey('blockedUsers')
+          ? List<String>.from(data['blockedUsers'] ?? [])
+          : _currentUser!.blockedUsers;
+      final latitude = data.containsKey('latitude')
+          ? data['latitude'] as double?
+          : _currentUser!.latitude;
+      final longitude = data.containsKey('longitude')
+          ? data['longitude'] as double?
+          : _currentUser!.longitude;
+      final geoHash = data.containsKey('geoHash')
+          ? data['geoHash'] as String?
+          : _currentUser!.geoHash;
+
       final updatedUser = _currentUser!.copyWith(
-        fullName: data['fullName'],
-        phoneNumber: data['phoneNumber'],
-        profilePhoto: data['profilePhoto'],
-        city: data['city'],
-        neighborhood: data['neighborhood'],
-        language: data['language'],
-        userType: data['userType'],
-        mode: data['mode'],
-        category: data['category'],
-        skills: data['skills'],
-        yearsOfExperience: data['yearsOfExperience'],
-        description: data['description'],
-        serviceAreas: data['serviceAreas'],
-        portfolioPhotos: data['portfolioPhotos'],
-        certificates: data['certificates'],
-        availabilitySchedule: data['availabilitySchedule'],
-        availabilityStatus: data['availabilityStatus'],
-        isOnline: data['isOnline'],
-        emergencyServices: data['emergencyServices'] ?? false,
-        trustedContacts: data['trustedContacts'] != null
-            ? List<String>.from(data['trustedContacts'])
-            : null,
-        blockedUsers: data['blockedUsers'] != null
-            ? List<String>.from(data['blockedUsers'])
-            : null,
+        fullName: fullName,
+        phoneNumber: phoneNumber,
+        profilePhoto: profilePhoto,
+        city: city,
+        neighborhood: neighborhood,
+        language: language,
+        userType: userType,
+        mode: mode,
+        category: category,
+        skills: skills,
+        yearsOfExperience: yearsOfExperience,
+        description: description,
+        serviceAreas: serviceAreas,
+        portfolioPhotos: portfolioPhotos,
+        certificates: certificates,
+        availabilitySchedule: availabilitySchedule,
+        availabilityStatus: availabilityStatus,
+        isOnline: isOnline,
+        emergencyServices: emergencyServices,
+        trustedContacts: trustedContacts,
+        blockedUsers: blockedUsers,
+        latitude: latitude,
+        longitude: longitude,
+        geoHash: geoHash,
       );
 
       await _firestore

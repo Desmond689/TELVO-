@@ -49,9 +49,10 @@ class _ChooseModeScreenState extends State<ChooseModeScreen> {
     setState(() => _isLoading = true);
 
     final authProvider = context.read<AuthProvider>();
+    final resolvedMode = _selectedMode == 'both' ? 'customer' : _selectedMode;
     await authProvider.updateProfile({
       'userType': _selectedMode,
-      'mode': _selectedMode,
+      'mode': resolvedMode,
     });
 
     if (mounted) {

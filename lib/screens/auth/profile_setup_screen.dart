@@ -128,6 +128,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       }
     } catch (_) {}
 
+    final wasCompletingProfile = authProvider.currentUser?.city?.isNotEmpty == true ||
+        authProvider.currentUser?.neighborhood?.isNotEmpty == true ||
+        authProvider.currentUser?.language?.isNotEmpty == true;
+
     await authProvider.updateProfile({
       'fullName': _fullNameController.text.trim(),
       'city': _cityController.text.trim(),
@@ -142,15 +146,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (mounted) {
       setState(() => _isLoading = false);
       if (authProvider.error == null) {
-        final isEditingProfile =
-            authProvider.currentUser?.city?.isNotEmpty == true ||
-            authProvider.currentUser?.neighborhood?.isNotEmpty == true ||
-            authProvider.currentUser?.language?.isNotEmpty == true;
+        await Future<void>.delayed(Duration.zero);
+        if (!mounted) return;
 
-        if (isEditingProfile) {
+        final userType = authProvider.currentUser?.userType;
+        if (wasCompletingProfile) {
           Navigator.pop(context);
-        } else {
+        } else if (userType == null) {
           Navigator.pushReplacementNamed(context, AppRoutes.chooseMode);
+        } else if (userType == 'professional' || userType == 'both') {
+          Navigator.pushReplacementNamed(
+            context,
+            AppRoutes.professionalSetup,
+          );
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
         }
       } else {
         ScaffoldMessenger.of(

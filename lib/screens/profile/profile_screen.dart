@@ -19,7 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
-    final isDualModeAccount = user?.userType == 'both';
+    final isDualModeAccount = authProvider.canSwitchModes;
 
     if (user == null) {
       return const Scaffold(
@@ -53,15 +53,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 CustomButton(
                   text: 'Switch Mode',
                   isOutlined: true,
-                  onPressed: () {
-                    authProvider.switchMode(
-                      user.mode == 'professional' ? 'customer' : 'professional',
-                    );
+                  onPressed: () async {
+                    final nextMode = user.mode == 'professional'
+                        ? 'customer'
+                        : 'professional';
+                    await authProvider.switchMode(nextMode);
+                    if (!mounted) return;
+                    if (authProvider.error != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(authProvider.error!)),
+                      );
+                      return;
+                    }
                     Navigator.pushReplacementNamed(
                       context,
-                      user.mode == 'professional'
-                          ? AppRoutes.home
-                          : AppRoutes.professionalDashboard,
+                      nextMode == 'professional'
+                          ? AppRoutes.professionalDashboard
+                          : AppRoutes.home,
                     );
                   },
                 ),

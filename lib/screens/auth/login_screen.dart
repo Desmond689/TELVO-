@@ -44,8 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (success) {
-      final userType = authProvider.currentUser?.userType;
-      final destination = userType == 'professional'
+      final destination = authProvider.isProfessionalMode
           ? AppRoutes.professionalDashboard
           : AppRoutes.home;
       Navigator.pushNamedAndRemoveUntil(context, destination, (route) => false);

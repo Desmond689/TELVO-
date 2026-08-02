@@ -10,7 +10,7 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
-    final isDualModeAccount = user?.userType == 'both';
+    final isDualModeAccount = authProvider.canSwitchModes;
 
     return Drawer(
       child: SafeArea(
@@ -81,13 +81,20 @@ class AppDrawer extends StatelessWidget {
               _buildDrawerItem(
                 icon: Icons.swap_horiz,
                 title: 'Switch Mode',
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
                   final currentMode = user?.mode;
                   final newMode = currentMode == 'professional'
                       ? 'customer'
                       : 'professional';
-                  authProvider.switchMode(newMode);
+                  await authProvider.switchMode(newMode);
+                  if (!context.mounted) return;
+                  if (authProvider.error != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(authProvider.error!)),
+                    );
+                    return;
+                  }
                   Navigator.pushReplacementNamed(
                     context,
                     newMode == 'professional'

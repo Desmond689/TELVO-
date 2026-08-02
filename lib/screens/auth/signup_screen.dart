@@ -104,7 +104,9 @@ class _SignupScreenState extends State<SignupScreen> {
               Text(
                 _userType == 'professional'
                     ? 'Sign up to offer your services'
-                    : 'Sign up to get started',
+                    : _userType == 'both'
+                        ? 'Sign up to use Telvo as both a customer and a professional'
+                        : 'Sign up as a customer and get started',
                 style: TextStyle(
                   fontSize: 16,
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),

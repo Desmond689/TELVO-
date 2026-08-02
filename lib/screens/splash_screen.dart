@@ -40,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Navigator.pushReplacementNamed(context, AppRoutes.profileSetup);
         } else if (user?.userType == null) {
           Navigator.pushReplacementNamed(context, AppRoutes.chooseMode);
-        } else if (user?.mode == 'professional') {
+        } else if (authProvider.isProfessionalMode) {
           Navigator.pushReplacementNamed(
             context,
             AppRoutes.professionalDashboard,

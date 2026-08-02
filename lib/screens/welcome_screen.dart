@@ -73,7 +73,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 48),
                 CustomButton(
-                  text: 'Get Started',
+                  text: 'Join as a Customer',
                   onPressed: () {
                     Navigator.pushNamed(
                       context,
@@ -84,13 +84,25 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 CustomButton(
-                  text: 'I\'m a Professional',
+                  text: 'Join as a Professional',
                   isOutlined: true,
                   onPressed: () {
                     Navigator.pushNamed(
                       context,
                       AppRoutes.signup,
                       arguments: 'professional',
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                CustomButton(
+                  text: 'Use Both Modes',
+                  isOutlined: true,
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.signup,
+                      arguments: 'both',
                     );
                   },
                 ),

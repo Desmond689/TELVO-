@@ -266,11 +266,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildTile(
                   icon: Icons.switch_account,
                   title: 'Switch Mode',
-                  onTap: () {
+                  onTap: () async {
                     final nextMode = user?.mode == 'professional'
                         ? 'customer'
                         : 'professional';
-                    context.read<AuthProvider>().switchMode(nextMode);
+                    await context.read<AuthProvider>().switchMode(nextMode);
+                    if (!context.mounted) return;
                     Navigator.pushReplacementNamed(
                       context,
                       nextMode == 'professional'
