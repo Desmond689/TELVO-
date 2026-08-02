@@ -40,7 +40,7 @@ class AuthProvider extends ChangeNotifier {
     final userType = user?.userType?.toLowerCase();
     final mode = user?.mode?.toLowerCase();
     if (mode == 'professional' || mode == 'customer') {
-      return mode;
+      return mode!;
     }
     if (userType == 'professional') {
       return 'professional';

@@ -29,9 +29,6 @@ class StorageService {
       Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload'),
     );
     request.fields['upload_preset'] = uploadPreset;
-    request.fields['api_key'] = dotenv.env['CLOUDINARY_API_KEY'] ?? '';
-    request.fields['timestamp'] = DateTime.now().millisecondsSinceEpoch.toString();
-    request.fields['signature'] = '';
     request.fields['folder'] = folder;
     request.files.add(
       await http.MultipartFile.fromPath(
