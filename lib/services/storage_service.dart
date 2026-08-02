@@ -88,17 +88,27 @@ class StorageService {
           final json = jsonDecode(body) as Map<String, dynamic>;
           return json['secure_url'] as String?;
         }
+
+        // Cloudinary returned an error - include the body for debugging so
+        // callers receive a clearer message instead of a generic not-found.
+        throw Exception('Cloudinary upload failed: ${body.isNotEmpty ? body : 'status=${response.statusCode}'}');
       }
 
-      final ref = _storage.ref().child('$folder/$fileName');
-      await ref.putFile(
-        file,
-        SettableMetadata(
-          contentType: 'image/jpeg',
-          cacheControl: 'public,max-age=31536000',
-        ),
-      );
-      return await ref.getDownloadURL();
+      try {
+        final sanitizedFileName = fileName ?? file.uri.pathSegments.last;
+        final ref = _storage.ref().child('$folder/$sanitizedFileName');
+        final uploadTask = await ref.putFile(
+          file,
+          SettableMetadata(
+            contentType: 'image/jpeg',
+            cacheControl: 'public,max-age=31536000',
+          ),
+        );
+        return await ref.getDownloadURL();
+      } catch (e) {
+        // Re-throw so callers get a friendly mapped message higher up.
+        throw e;
+      }
     } catch (e) {
       throw Exception(getFriendlyErrorMessage(e));
     }
