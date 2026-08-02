@@ -197,12 +197,15 @@ class JobProvider extends ChangeNotifier {
       }
 
       // Notify professional
-      final job = _jobs.firstWhere((j) => j.id == jobId, orElse: () => JobModel());
+      final job = _jobs.firstWhere(
+        (j) => j.id == jobId,
+        orElse: () => JobModel(),
+      );
       final quote = job.quotes?.firstWhere(
         (q) => q.id == quoteId,
-        orElse: () => QuoteModel(),
+        orElse: () => null,
       );
-      if (quote.jobId != null) {
+      if (quote != null && quote.jobId != null) {
         await _notificationService.notifyQuoteAccepted(quote);
       }
 

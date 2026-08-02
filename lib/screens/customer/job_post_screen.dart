@@ -88,7 +88,7 @@ class _JobPostScreenState extends State<JobPostScreen> {
                     color: AppColors.primaryBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+                      color: AppColors.primary.withOpacity(0.2),
                     ),
                   ),
                   child: Row(
@@ -259,11 +259,11 @@ class _JobPostScreenState extends State<JobPostScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceMuted,
+                color: AppColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: _selectedCategory != null
-                      ? AppColors.primary.withValues(alpha: 0.4)
+                      ? AppColors.primary.withOpacity(0.4)
                       : Colors.transparent,
                 ),
               ),

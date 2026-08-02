@@ -93,7 +93,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: AppColors.primary.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -174,7 +174,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
       height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceMuted,
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -245,10 +245,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
           )
         else
           ...payments.take(10).map((payment) {
-            final job = jobs.firstWhere(
-              (j) => j.id == payment.jobId,
-              orElse: () => jobs.isNotEmpty ? jobs.first : null,
-            );
+            final job = jobs.where((j) => j.id == payment.jobId).cast<JobModel?>().firstOrNull;
             return _buildTransactionTile(
               icon: Icons.check_circle_rounded,
               title: job?.category ?? 'Payment received',
