@@ -19,13 +19,18 @@ service firebase.storage {
         fileName == request.auth.uid + '.jpg' && isValidImage();
     }
 
+    function isJobOwner(jobId) {
+      return isSignedIn() && exists(/databases/$(database)/documents/jobs/$(jobId)) &&
+        (get(/databases/$(database)/documents/jobs/$(jobId)).data.customerId == request.auth.uid ||
+         get(/databases/$(database)/documents/jobs/$(jobId)).data.professionalId == request.auth.uid);
+    }
+
     // Job photos: /job_photos/{jobId}/{index}.jpg
-    // Ownership is enforced at the application layer (only the job's
-    // customer/professional can call uploadJobPhoto for a given jobId);
-    // any signed-in user may read since job photos are shown to both sides.
+    // Only the job owner or assigned professional may upload images for a job;
+    // any signed-in user may read them because they are part of the job record.
     match /job_photos/{jobId}/{fileName} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidImage();
+      allow write: if isJobOwner(jobId) && isValidImage() && request.resource.size < 10 * 1024 * 1024;
     }
 
     // Portfolio photos: /portfolio_photos/{userId}/{index}.jpg

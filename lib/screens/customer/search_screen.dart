@@ -4,6 +4,7 @@ import 'package:telvo/config/routes.dart';
 import 'package:telvo/models/professional_display.dart';
 import 'package:telvo/models/user_model.dart';
 import 'package:telvo/providers/user_provider.dart';
+import 'package:telvo/utils/app_colors.dart';
 import 'package:telvo/widgets/empty_state.dart';
 import 'package:telvo/widgets/professional_card.dart';
 import 'package:telvo/widgets/custom_text_field.dart';
@@ -149,20 +150,20 @@ class _SearchScreenState extends State<SearchScreen> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back),
+                        icon: const Icon(Icons.arrow_back_rounded),
                       ),
                       Expanded(
                         child: CustomTextField(
                           controller: _searchController,
                           hintText: 'Search professionals...',
-                          prefixIcon: const Icon(Icons.search),
+                          prefixIcon: const Icon(Icons.search_rounded),
                           onChanged: (value) =>
                               setState(() => _searchText = value),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   SizedBox(
                     height: 40,
                     child: ListView.builder(
@@ -183,9 +184,13 @@ class _SearchScreenState extends State<SearchScreen> {
                                     : 'All';
                               });
                             },
-                            selectedColor: const Color(0xFF00C853),
+                            selectedColor: AppColors.primary,
+                            checkmarkColor: Colors.white,
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         );
@@ -198,6 +203,7 @@ class _SearchScreenState extends State<SearchScreen> {
             Container(
               height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 16),
+              margin: const EdgeInsets.only(bottom: 8),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _filters.length,
@@ -210,24 +216,36 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: OutlinedButton(
                       onPressed: () => _onFilterTap(filter),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        backgroundColor: isSelected
-                            ? const Color(0xFF00C853)
-                            : null,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        backgroundColor: isSelected ? AppColors.primary : null,
+                        disabledBackgroundColor: Colors.transparent,
                         foregroundColor: isUnavailable
-                            ? Colors.grey
-                            : (isSelected ? Colors.white : null),
+                            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
+                            : (isSelected ? Colors.white : AppColors.textSecondary),
+                        side: BorderSide(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Theme.of(context).colorScheme.outlineVariant,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                       ),
-                      child: Text(filter, style: const TextStyle(fontSize: 12)),
+                      child: Text(
+                        filter,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
                     ),
                   );
                 },
               ),
             ),
-            const Divider(),
             Expanded(
               child: StreamBuilder<List<UserModel>>(
                 // key forces the StreamBuilder to resubscribe to a fresh
@@ -236,7 +254,9 @@ class _SearchScreenState extends State<SearchScreen> {
                 stream: userProvider.getProfessionals(category: category),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 3),
+                    );
                   }
                   if (snapshot.hasError) {
                     return const EmptyState(
@@ -255,6 +275,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   }
 
                   return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
                     itemCount: professionals.length,
                     itemBuilder: (context, index) {
                       final professional = professionals[index];

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:telvo/screens/customer/home_screen.dart';
+import 'package:telvo/utils/app_colors.dart';
 
 class CategoryCard extends StatelessWidget {
   final Category category;
@@ -16,16 +17,26 @@ class CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 80,
+        width: 84,
         margin: const EdgeInsets.only(right: 12),
         child: Column(
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 68,
+              height: 68,
               decoration: BoxDecoration(
-                color: category.color.withValues(alpha: 0.1),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    category.color.withValues(alpha: 0.15),
+                    category.color.withValues(alpha: 0.06),
+                  ],
+                ),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: category.color.withValues(alpha: 0.15),
+                ),
               ),
               child: Icon(
                 category.icon,
@@ -38,7 +49,7 @@ class CategoryCard extends StatelessWidget {
               category.name,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,

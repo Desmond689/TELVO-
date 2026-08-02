@@ -1,5 +1,6 @@
 // lib/widgets/custom_button.dart
 import 'package:flutter/material.dart';
+import 'package:telvo/utils/app_colors.dart';
 
 class CustomButton extends StatelessWidget {
   const CustomButton({
@@ -28,43 +29,45 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final button = SizedBox(
       width: width ?? double.infinity,
-      height: height ?? 50,
+      height: height ?? 54,
       child: isOutlined
           ? OutlinedButton(
               onPressed: isLoading ? null : onPressed,
               style: OutlinedButton.styleFrom(
                 side: BorderSide(
-                  color: backgroundColor ?? const Color(0xFF00C853),
+                  width: 1.4,
+                  color: backgroundColor ?? AppColors.primary,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: _buildContent(),
+              child: _buildContent(context),
             )
           : ElevatedButton(
               onPressed: isLoading ? null : onPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: backgroundColor ?? const Color(0xFF00C853),
+                backgroundColor: backgroundColor ?? AppColors.primary,
                 foregroundColor: textColor ?? Colors.white,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: _buildContent(),
+              child: _buildContent(context),
             ),
     );
 
     return button;
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     if (isLoading) {
       return const SizedBox(
         height: 24,
         width: 24,
         child: CircularProgressIndicator(
-          strokeWidth: 2,
+          strokeWidth: 2.5,
           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
       );
@@ -73,10 +76,19 @@ class CustomButton extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
+        if (icon != null) ...[
+          Icon(icon, size: 20),
+          const SizedBox(width: 8),
+        ],
         Text(
           text,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: isOutlined
+                ? (textColor ?? AppColors.primary)
+                : (textColor ?? Colors.white),
+          ),
         ),
       ],
     );

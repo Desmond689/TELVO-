@@ -6,8 +6,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:telvo/models/user_model.dart';
-import 'package:telvo/services/api_service.dart';
 import 'package:telvo/services/notification_service.dart';
+import 'package:telvo/services/storage_service.dart';
+import 'package:telvo/utils/error_messages.dart';
+import 'package:telvo/utils/helpers.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider() {
@@ -80,17 +82,24 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadUserData(String userId) async {
     try {
       _setLoading(true);
-      final doc = await _firestore.collection('users').doc(userId).get();
-      if (doc.exists) {
-        _currentUser = UserModel.fromMap(doc.data()!);
-        // Update online status
-        await _updateOnlineStatus(true);
-        // Register FCM token
-        await NotificationService().registerToken(userId);
+      final hasInternet = await Helpers.checkInternetConnection();
+      if (!hasInternet) {
+        final cachedDoc = await _firestore.collection('users').doc(userId).get(GetOptions(source: Source.cache));
+        if (cachedDoc.exists) {
+          _currentUser = UserModel.fromMap(cachedDoc.data()!);
+        }
+        _setError('No internet connection. Please check your connection and try again.');
+      } else {
+        final doc = await _firestore.collection('users').doc(userId).get();
+        if (doc.exists) {
+          _currentUser = UserModel.fromMap(doc.data()!);
+          await _updateOnlineStatus(true);
+          await NotificationService().registerToken(userId);
+        }
+        _setError(null);
       }
-      _setError(null);
     } catch (e) {
-      _setError(e.toString());
+      _setError(getFriendlyErrorMessage(e));
     } finally {
       _setLoading(false);
     }
@@ -309,6 +318,7 @@ class AuthProvider extends ChangeNotifier {
 
       final updatedUser = _currentUser!.copyWith(
         fullName: data['fullName'],
+        phoneNumber: data['phoneNumber'],
         profilePhoto: data['profilePhoto'],
         city: data['city'],
         neighborhood: data['neighborhood'],
@@ -326,6 +336,12 @@ class AuthProvider extends ChangeNotifier {
         availabilityStatus: data['availabilityStatus'],
         isOnline: data['isOnline'],
         emergencyServices: data['emergencyServices'] ?? false,
+        trustedContacts: data['trustedContacts'] != null
+            ? List<String>.from(data['trustedContacts'])
+            : null,
+        blockedUsers: data['blockedUsers'] != null
+            ? List<String>.from(data['blockedUsers'])
+            : null,
       );
 
       await _firestore
@@ -337,7 +353,7 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError(getFriendlyErrorMessage(e));
       _setLoading(false);
     }
   }
@@ -359,20 +375,20 @@ class AuthProvider extends ChangeNotifier {
           fileName ??
           '${_currentUser!.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      final response = await ApiService().uploadImage(
+      // Upload directly to Firebase Storage (no backend API needed).
+      final storageService = StorageService();
+      final url = await storageService.uploadFileDirect(
         file: file,
         folder: folder,
         fileName: storageFileName,
       );
-
-      final uploadedUrl = response['data']?['url'] ?? response['url'];
-      if (uploadedUrl is String && uploadedUrl.isNotEmpty) {
-        return uploadedUrl;
+      if (url != null && url.isNotEmpty) {
+        return url;
       }
 
-      throw Exception('Upload failed. No URL returned from backend.');
+      throw Exception('Upload failed. Could not upload to Firebase Storage.');
     } catch (e) {
-      _setError(e.toString());
+      _setError(getFriendlyErrorMessage(e));
       return null;
     }
   }
@@ -416,7 +432,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = _currentUser!.copyWith(mode: mode);
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError(getFriendlyErrorMessage(e));
     }
   }
 
@@ -427,6 +443,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> updateOnlineStatus(bool isOnline) async {
     try {
       if (_currentUser == null) return;
+      final hasInternet = await Helpers.checkInternetConnection();
+      if (!hasInternet) return;
 
       await _firestore.collection('users').doc(_currentUser!.id).update({
         'isOnline': isOnline,
@@ -451,7 +469,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = null;
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError(getFriendlyErrorMessage(e));
     }
   }
 
@@ -469,7 +487,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = null;
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError(getFriendlyErrorMessage(e));
     }
   }
 

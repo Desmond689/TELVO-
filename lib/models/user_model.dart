@@ -18,6 +18,7 @@ class UserModel {
     this.isIdVerified = false,
     this.isSelfieVerified = false,
     this.trustedContacts = const [],
+    this.blockedUsers = const [],
     this.createdAt,
     this.lastActive,
     this.isOnline = false,
@@ -60,6 +61,7 @@ class UserModel {
       isIdVerified: map['isIdVerified'] ?? false,
       isSelfieVerified: map['isSelfieVerified'] ?? false,
       trustedContacts: List<String>.from(map['trustedContacts'] ?? []),
+      blockedUsers: List<String>.from(map['blockedUsers'] ?? []),
       createdAt: map['createdAt']?.toDate(),
       lastActive: map['lastActive']?.toDate(),
       isOnline: map['isOnline'] ?? false,
@@ -100,6 +102,7 @@ class UserModel {
   final bool isIdVerified;
   final bool isSelfieVerified;
   final List<String> trustedContacts;
+  final List<String> blockedUsers;
   final DateTime? createdAt;
   final DateTime? lastActive;
   final bool isOnline;
@@ -144,6 +147,7 @@ class UserModel {
     'isIdVerified': isIdVerified,
     'isSelfieVerified': isSelfieVerified,
     'trustedContacts': trustedContacts,
+    'blockedUsers': blockedUsers,
     'createdAt': createdAt,
     'lastActive': lastActive,
     'isOnline': isOnline,
@@ -185,6 +189,7 @@ class UserModel {
     bool? isIdVerified,
     bool? isSelfieVerified,
     List<String>? trustedContacts,
+    List<String>? blockedUsers,
     DateTime? createdAt,
     DateTime? lastActive,
     bool? isOnline,
@@ -224,6 +229,7 @@ class UserModel {
     isIdVerified: isIdVerified ?? this.isIdVerified,
     isSelfieVerified: isSelfieVerified ?? this.isSelfieVerified,
     trustedContacts: trustedContacts ?? this.trustedContacts,
+    blockedUsers: blockedUsers ?? this.blockedUsers,
     createdAt: createdAt ?? this.createdAt,
     lastActive: lastActive ?? this.lastActive,
     isOnline: isOnline ?? this.isOnline,

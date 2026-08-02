@@ -6,6 +6,7 @@ import 'package:telvo/providers/auth_provider.dart';
 import 'package:telvo/providers/job_provider.dart';
 import 'package:telvo/providers/payment_provider.dart';
 import 'package:telvo/config/routes.dart';
+import 'package:telvo/utils/app_colors.dart';
 
 class ProfessionalDashboardScreen extends StatefulWidget {
   const ProfessionalDashboardScreen({super.key});
@@ -54,13 +55,13 @@ class _ProfessionalDashboardScreenState
                 onRefresh: _loadData,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
                       _buildStats(user),
                       const SizedBox(height: 24),
                       _buildQuickActions(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
                       _buildRecentJobs(),
                       const SizedBox(height: 80),
                     ],
@@ -76,68 +77,99 @@ class _ProfessionalDashboardScreenState
         onPressed: () {
           Navigator.pushNamed(context, AppRoutes.jobFeed);
         },
-        backgroundColor: const Color(0xFF00C853),
-        child: const Icon(Icons.search),
+        child: const Icon(Icons.work_rounded),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
   Widget _buildHeader(UserModel? user) => Padding(
-    padding: const EdgeInsets.all(16.0),
+    padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
     child: Row(
       children: [
-        CircleAvatar(
-          radius: 28,
-          backgroundImage: user?.profilePhoto != null
-              ? NetworkImage(user!.profilePhoto!)
-              : null,
-          child: user?.profilePhoto == null
-              ? const Icon(Icons.person, size: 32)
-              : null,
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              width: 2,
+            ),
+          ),
+          child: CircleAvatar(
+            radius: 28,
+            backgroundColor: AppColors.primaryBackground,
+            backgroundImage: user?.profilePhoto != null
+                ? NetworkImage(user!.profilePhoto!)
+                : null,
+            child: user?.profilePhoto == null
+                ? const Icon(
+                    Icons.person_rounded,
+                    size: 32,
+                    color: AppColors.primary,
+                  )
+                : null,
+          ),
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hello ${user?.fullName ?? 'Professional'}!',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hello ${user?.fullName ?? 'Professional'}!',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                  letterSpacing: -0.3,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: (user?.isOnline ?? false)
-                        ? const Color(0xFF00C853)
-                        : Colors.grey,
-                    shape: BoxShape.circle,
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: (user?.isOnline ?? false)
+                          ? AppColors.online
+                          : AppColors.offline,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  (user?.isOnline ?? false) ? 'Online' : 'Offline',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  const SizedBox(width: 6),
+                  Text(
+                    (user?.isOnline ?? false) ? 'Online' : 'Offline',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Poppins',
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
-        const Spacer(),
-        IconButton(
-          onPressed: () {
-            Navigator.pushNamed(context, AppRoutes.notifications);
-          },
-          icon: const Icon(Icons.notifications_outlined, size: 28),
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
+          ),
+          child: IconButton(
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.notifications);
+            },
+            icon: const Icon(Icons.notifications_rounded, size: 24),
+          ),
         ),
       ],
     ),
@@ -158,28 +190,28 @@ class _ProfessionalDashboardScreenState
       {
         'label': "Today's Earnings",
         'value': _formatXaf(sumSince(startOfDay)),
-        'icon': Icons.today,
-        'color': const Color(0xFF00C853),
+        'icon': Icons.today_rounded,
+        'color': AppColors.primary,
       },
       {
         'label': 'Weekly Earnings',
         'value': _formatXaf(sumSince(startOfWeek)),
-        'icon': Icons.weekend,
-        'color': const Color(0xFF2196F3),
+        'icon': Icons.date_range_rounded,
+        'color': AppColors.info,
       },
       {
         'label': 'Monthly Earnings',
         'value': _formatXaf(sumSince(startOfMonth)),
-        'icon': Icons.calendar_today,
-        'color': const Color(0xFFFF9800),
+        'icon': Icons.calendar_month_rounded,
+        'color': AppColors.warning,
       },
       {
         'label': 'Rating',
         'value': user?.rating != null
             ? '${user!.rating!.toStringAsFixed(1)} \u2b50'
             : 'No ratings yet',
-        'icon': Icons.star,
-        'color': const Color(0xFFFFC107),
+        'icon': Icons.star_rounded,
+        'color': const Color(0xFFFBBF24),
       },
     ];
 
@@ -190,7 +222,7 @@ class _ProfessionalDashboardScreenState
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.4,
+        childAspectRatio: 1.35,
       ),
       itemCount: stats.length,
       itemBuilder: (context, index) {
@@ -198,51 +230,58 @@ class _ProfessionalDashboardScreenState
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.35),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    stat['icon'] as IconData,
-                    color: stat['color'] as Color,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      stat['label'] as String,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (stat['color'] as Color).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  stat['icon'] as IconData,
+                  color: stat['color'] as Color,
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
+              Text(
+                stat['label'] as String,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
               Text(
                 stat['value'] as String,
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -266,8 +305,8 @@ class _ProfessionalDashboardScreenState
       Expanded(
         child: _buildActionCard(
           'Job Feed',
-          Icons.work,
-          const Color(0xFF00C853),
+          Icons.work_rounded,
+          AppColors.primary,
           () => Navigator.pushNamed(context, AppRoutes.jobFeed),
         ),
       ),
@@ -275,8 +314,8 @@ class _ProfessionalDashboardScreenState
       Expanded(
         child: _buildActionCard(
           'Availability',
-          Icons.toggle_on,
-          const Color(0xFF2196F3),
+          Icons.toggle_on_rounded,
+          AppColors.info,
           () => Navigator.pushNamed(context, AppRoutes.availability),
         ),
       ),
@@ -284,8 +323,8 @@ class _ProfessionalDashboardScreenState
       Expanded(
         child: _buildActionCard(
           'Earnings',
-          Icons.money,
-          const Color(0xFFFF9800),
+          Icons.account_balance_wallet_rounded,
+          AppColors.warning,
           () => Navigator.pushNamed(context, AppRoutes.earnings),
         ),
       ),
@@ -303,7 +342,10 @@ class _ProfessionalDashboardScreenState
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.15),
+        ),
       ),
       child: Column(
         children: [
@@ -313,7 +355,8 @@ class _ProfessionalDashboardScreenState
             title,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Poppins',
               color: color,
             ),
             textAlign: TextAlign.center,
@@ -333,9 +376,15 @@ class _ProfessionalDashboardScreenState
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Recent Jobs',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Poppins',
+                letterSpacing: -0.3,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             if (allJobs.isNotEmpty)
               TextButton(
@@ -352,7 +401,7 @@ class _ProfessionalDashboardScreenState
         if (_isLoadingData)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 3)),
           )
         else if (recentJobs.isEmpty)
           Padding(
@@ -361,7 +410,10 @@ class _ProfessionalDashboardScreenState
               child: Text(
                 'No jobs yet.',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  fontFamily: 'Poppins',
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -378,15 +430,29 @@ class _ProfessionalDashboardScreenState
   }
 
   Widget _buildJobTile(JobModel job) => Container(
-    margin: const EdgeInsets.only(bottom: 8),
-    padding: const EdgeInsets.all(12),
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-      borderRadius: BorderRadius.circular(8),
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.35),
+      ),
     ),
     child: Row(
       children: [
-        const Icon(Icons.work, color: Colors.grey),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.work_rounded,
+            color: AppColors.primary,
+            size: 22,
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -394,24 +460,41 @@ class _ProfessionalDashboardScreenState
             children: [
               Text(
                 job.serviceType ?? job.category ?? 'Service',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                ),
               ),
+              const SizedBox(height: 2),
               Text(
                 'Status: ${_statusLabel(job.status)}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  fontFamily: 'Poppins',
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ],
           ),
         ),
         if (job.budget != null)
-          Text(
-            _formatXaf(job.budget!),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF00C853),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              _formatXaf(job.budget!),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                fontFamily: 'Poppins',
+                color: AppColors.primary,
+              ),
             ),
           ),
       ],
@@ -426,9 +509,9 @@ class _ProfessionalDashboardScreenState
         .join(' ');
   }
 
-  Widget _buildBottomNavigationBar() => BottomNavigationBar(
-    currentIndex: _selectedIndex,
-    onTap: (index) {
+  Widget _buildBottomNavigationBar() => NavigationBar(
+    selectedIndex: _selectedIndex,
+    onDestinationSelected: (index) {
       setState(() {
         _selectedIndex = index;
       });
@@ -446,14 +529,29 @@ class _ProfessionalDashboardScreenState
           break;
       }
     },
-    type: BottomNavigationBarType.fixed,
-    selectedItemColor: const Color(0xFF00C853),
-    unselectedItemColor: Colors.grey,
-    items: const [
-      BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-      BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Jobs'),
-      BottomNavigationBarItem(icon: Icon(Icons.money), label: 'Earnings'),
-      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    indicatorColor: AppColors.primaryBackground,
+    destinations: const [
+      NavigationDestination(
+        icon: Icon(Icons.dashboard_outlined),
+        selectedIcon: Icon(Icons.dashboard_rounded),
+        label: 'Dashboard',
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.work_outline_rounded),
+        selectedIcon: Icon(Icons.work_rounded),
+        label: 'Jobs',
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.account_balance_wallet_outlined),
+        selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+        label: 'Earnings',
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.person_outline_rounded),
+        selectedIcon: Icon(Icons.person_rounded),
+        label: 'Profile',
+      ),
     ],
   );
 }

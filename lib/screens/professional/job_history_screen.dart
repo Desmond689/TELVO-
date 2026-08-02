@@ -11,10 +11,13 @@ class JobHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final jobs =
         ModalRoute.of(context)?.settings.arguments as List<JobModel>? ?? [];
+    final visibleJobs = jobs
+        .where((job) => !['completed', 'reviewed'].contains(job.status))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Job History'), elevation: 0),
-      body: jobs.isEmpty
+      body: visibleJobs.isEmpty
           ? Center(
               child: Text(
                 'No jobs yet.',
@@ -25,8 +28,8 @@ class JobHistoryScreen extends StatelessWidget {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: jobs.length,
-              itemBuilder: (context, index) => _buildJobTile(context, jobs[index]),
+              itemCount: visibleJobs.length,
+              itemBuilder: (context, index) => _buildJobTile(context, visibleJobs[index]),
             ),
     );
   }

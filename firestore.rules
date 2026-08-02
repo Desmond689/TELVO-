@@ -30,22 +30,58 @@ service cloud.firestore {
 
     // ---- users ----
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(userId);
-      // A user can update their own profile, but never their own verification
-      // or ban status - only the backend (via admin SDK, which bypasses rules)
-      // or an admin-claim account may do that. Mode changes are only allowed
-      // for dual accounts (userType == 'both').
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isOwner(userId) &&
+        request.resource.data.id == userId &&
+        request.resource.data.userType in ['customer', 'professional', 'both'];
       allow update: if (isOwner(userId) &&
         !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['isVerified', 'isBanned', 'isPhoneVerified']) &&
+          .hasAny(['isVerified', 'isBanned', 'isPhoneVerified', 'isEmailVerified']) &&
         (!request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(['mode']) || resource.data.userType == 'both')) || isAdmin();
       allow delete: if isAdmin();
     }
 
+    function isCompletedJob(data) {
+      return data.status == 'completed' || data.status == 'reviewed';
+    }
+
     // ---- jobs ----
     match /jobs/{jobId} {
+      allow read: if isSignedIn() &&
+        (isAdmin() || (!isCompletedJob(resource.data) &&
+          (resource.data.customerId == request.auth.uid ||
+           resource.data.professionalId == request.auth.uid)));
+      allow create: if isSignedIn() &&
+        request.resource.data.customerId == request.auth.uid &&
+        request.resource.data.status == 'posted' &&
+        request.resource.data.status != 'completed' &&
+        request.resource.data.status != 'reviewed';
+      allow update: if isSignedIn() &&
+        (isAdmin() || (!isCompletedJob(resource.data) &&
+          (resource.data.customerId == request.auth.uid ||
+           resource.data.professionalId == request.auth.uid)));
+      allow delete: if isSignedIn() &&
+        (resource.data.customerId == request.auth.uid || isAdmin());
+    }
+
+    // ---- quotes ----
+    match /quotes/{quoteId} {
+      allow read: if isSignedIn() &&
+        (resource.data.professionalId == request.auth.uid ||
+         resource.data.customerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() &&
+        request.resource.data.professionalId == request.auth.uid &&
+        request.resource.data.status in ['pending', 'accepted', 'rejected'];
+      allow update: if isSignedIn() &&
+        (resource.data.professionalId == request.auth.uid ||
+         resource.data.customerId == request.auth.uid ||
+         isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ---- hire_requests (direct hiring, separate from jobs/quotes) ----
+    match /hire_requests/{hireId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() &&
         request.resource.data.customerId == request.auth.uid;
@@ -53,18 +89,6 @@ service cloud.firestore {
         (resource.data.customerId == request.auth.uid ||
          resource.data.professionalId == request.auth.uid ||
          isAdmin());
-      allow delete: if isSignedIn() &&
-        resource.data.customerId == request.auth.uid || isAdmin();
-
-      // ---- quotes (subcollection or top-level, handled by top-level rule below) ----
-    }
-
-    match /quotes/{quoteId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() &&
-        request.resource.data.professionalId == request.auth.uid;
-      allow update: if isSignedIn() &&
-        (resource.data.professionalId == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
 
@@ -78,17 +102,20 @@ service cloud.firestore {
 
     // ---- chats & messages ----
     match /chats/{chatId} {
+      // Note: app stores participants in `participantIds` field.
       allow read, write: if isSignedIn() &&
-        request.auth.uid in resource.data.participants;
+        request.auth.uid in resource.data.participantIds;
       allow create: if isSignedIn() &&
-        request.auth.uid in request.resource.data.participants;
+        request.auth.uid in request.resource.data.participantIds;
 
       match /messages/{messageId} {
         allow read: if isSignedIn() &&
-          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
         allow create: if isSignedIn() &&
           request.resource.data.senderId == request.auth.uid;
-        allow update, delete: if false; // messages are immutable
+        allow update: if isSignedIn() &&
+          request.resource.data.receiverId == request.auth.uid;
+        allow delete: if false; // messages are immutable
       }
     }
 
@@ -108,11 +135,13 @@ service cloud.firestore {
     }
 
     // ---- notifications ----
+    // Users can read their own notifications, and the app writes
+    // notifications directly (client-side creation for quotes/hires etc.)
     match /notifications/{notificationId} {
-      allow read, update: if isSignedIn() &&
+      allow read, update, delete: if isSignedIn() &&
         resource.data.userId == request.auth.uid;
-      allow create: if false; // only backend sends notifications
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
     }
 
     // ---- reports / disputes ----
@@ -151,6 +180,13 @@ service cloud.firestore {
     match /settings/{docId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // ---- verifications (worker ID document uploads) ----
+    match /verifications/{verificationId} {
+      allow read, create, update: if isSignedIn() &&
+        (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
     }
 
     // Default deny for anything not explicitly listed above.

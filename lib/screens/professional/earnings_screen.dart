@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:telvo/widgets/custom_button.dart';
+import 'package:provider/provider.dart';
+import 'package:telvo/models/job_model.dart';
+import 'package:telvo/models/payment_model.dart';
+import 'package:telvo/providers/auth_provider.dart';
+import 'package:telvo/providers/job_provider.dart';
+import 'package:telvo/providers/payment_provider.dart';
+import 'package:telvo/utils/app_colors.dart';
+import 'package:telvo/widgets/empty_state.dart';
 
 class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
@@ -11,114 +18,164 @@ class EarningsScreen extends StatefulWidget {
 class _EarningsScreenState extends State<EarningsScreen> {
   int _selectedPeriod = 0; // 0: Daily, 1: Weekly, 2: Monthly, 3: Yearly
 
-  final List<Map<String, dynamic>> _transactions = [
-    {
-      'date': '2024-01-15',
-      'job': 'Plumbing Repair',
-      'amount': 15000,
-      'status': 'Completed',
-    },
-    {
-      'date': '2024-01-14',
-      'job': 'Electrical Installation',
-      'amount': 25000,
-      'status': 'Completed',
-    },
-    {
-      'date': '2024-01-13',
-      'job': 'House Cleaning',
-      'amount': 12000,
-      'status': 'Completed',
-    },
-    {
-      'date': '2024-01-12',
-      'job': 'Painting Service',
-      'amount': 18000,
-      'status': 'Pending',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+  }
+
+  Future<void> _loadData() async {
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) return;
+    await Future.wait([
+      context.read<JobProvider>().loadProfessionalJobs(userId),
+      context.read<JobProvider>().loadQuotes(userId),
+      context.read<PaymentProvider>().loadProfessionalPayments(userId),
+    ]);
+    if (mounted) setState(() {});
+  }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Earnings'), elevation: 0),
-    body: SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+  Widget build(BuildContext context) {
+    final payments = context.watch<PaymentProvider>().payments;
+    final allJobs = context.watch<JobProvider>().myJobs;
+    final acceptedQuotes = context.watch<JobProvider>().quotes
+        .where((q) => q.status == 'accepted')
+        .toList();
+
+    final totalEarnings = payments.fold<double>(
+      0.0,
+      (sum, p) => sum + (p.amount ?? 0),
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Earnings')),
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: _loadData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildEarningsSummary(totalEarnings),
+              const SizedBox(height: 24),
+              _buildPeriodSelector(),
+              const SizedBox(height: 24),
+              _buildTransactions(payments, acceptedQuotes, allJobs),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEarningsSummary(double totalEarnings) {
+    final payments = context.watch<PaymentProvider>().payments;
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final startOfWeek = startOfDay.subtract(Duration(days: now.weekday - 1));
+    final startOfMonth = DateTime(now.year, now.month);
+
+    double sumSince(DateTime cutoff) => payments
+        .where((p) => (p.createdAt ?? now).isAfter(cutoff))
+        .fold(0.0, (sum, p) => sum + (p.amount ?? 0));
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: AppColors.primaryGradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildEarningsSummary(),
-          const SizedBox(height: 24),
-          _buildPeriodSelector(),
-          const SizedBox(height: 16),
-          _buildChart(),
-          const SizedBox(height: 24),
-          _buildTransactions(),
+          const Text(
+            'Total Earnings',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontFamily: 'Poppins',
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'XAF ${_formatAmount(totalEarnings)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Poppins',
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildEarningsStat('Today', 'XAF ${_formatAmount(sumSince(startOfDay))}'),
+              _buildEarningsStat('This Week', 'XAF ${_formatAmount(sumSince(startOfWeek))}'),
+              _buildEarningsStat('This Month', 'XAF ${_formatAmount(sumSince(startOfMonth))}'),
+            ],
+          ),
         ],
       ),
-    ),
-  );
-
-  Widget _buildEarningsSummary() => Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF00C853), Color(0xFF00E676)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Total Earnings',
-          style: TextStyle(color: Colors.white, fontSize: 14),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'XAF 450,000',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildEarningsStat('This Month', 'XAF 150,000'),
-            _buildEarningsStat('This Week', 'XAF 45,000'),
-            _buildEarningsStat('Today', 'XAF 25,000'),
-          ],
-        ),
-      ],
-    ),
-  );
+    );
+  }
 
   Widget _buildEarningsStat(String label, String value) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+      Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 12,
+          fontFamily: 'Poppins',
+        ),
+      ),
+      const SizedBox(height: 2),
       Text(
         value,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Poppins',
         ),
       ),
     ],
   );
 
+  String _formatAmount(double amount) {
+    return amount
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'\B(?=(\d{3})+(?!\d))'),
+          (match) => ',',
+        );
+  }
+
   Widget _buildPeriodSelector() {
     final periods = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
     return Container(
-      height: 44,
+      height: 48,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(22),
+        color: Theme.of(context).colorScheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         children: periods.asMap().entries.map((entry) {
@@ -132,21 +189,22 @@ class _EarningsScreenState extends State<EarningsScreen> {
                   _selectedPeriod = index;
                 });
               },
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF00C853)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Center(
                   child: Text(
                     period,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey.shade600,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                      color: isSelected
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
                     ),
                   ),
                 ),
@@ -158,164 +216,113 @@ class _EarningsScreenState extends State<EarningsScreen> {
     );
   }
 
-  Widget _buildChart() => Container(
-    height: 120,
-    decoration: BoxDecoration(
-      color: Colors.grey.shade50,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey.shade200),
-    ),
-    child: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.show_chart, size: 40, color: Colors.grey),
-          const SizedBox(height: 8),
-          Text('Earnings Chart', style: TextStyle(color: Colors.grey.shade600)),
-        ],
-      ),
-    ),
-  );
-
-  Widget _buildTransactions() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Recent Transactions',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  Widget _buildTransactions(
+    List<PaymentModel> payments,
+    List<QuoteModel> acceptedQuotes,
+    List<JobModel> jobs,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Recent Transactions',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Poppins',
+            letterSpacing: -0.3,
           ),
-          TextButton(
-            onPressed: () {
-              // View all transactions
-            },
-            child: const Text('See All'),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-      ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: _transactions.length,
-        itemBuilder: (context, index) {
-          final transaction = _transactions[index];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
+        ),
+        const SizedBox(height: 12),
+        if (payments.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: EmptyState(
+              title: 'No transactions yet',
+              subtitle: 'Your earnings will appear here once you complete jobs',
+              imagePath: 'assets/images/empty_state.png',
             ),
-            child: Row(
+          )
+        else
+          ...payments.take(10).map((payment) {
+            final job = jobs.firstWhere(
+              (j) => j.id == payment.jobId,
+              orElse: () => jobs.isNotEmpty ? jobs.first : null,
+            );
+            return _buildTransactionTile(
+              icon: Icons.check_circle_rounded,
+              title: job?.category ?? 'Payment received',
+              subtitle: 'Payment received • Completed',
+              amount: payment.amount ?? 0,
+              isPositive: true,
+              iconColor: AppColors.success,
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _buildTransactionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required double amount,
+    required bool isPositive,
+    required Color iconColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: transaction['status'] == 'Completed'
-                        ? Colors.green.shade100
-                        : Colors.orange.shade100,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    transaction['status'] == 'Completed'
-                        ? Icons.check
-                        : Icons.hourglass_empty,
-                    color: transaction['status'] == 'Completed'
-                        ? Colors.green
-                        : Colors.orange,
-                    size: 16,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        transaction['job'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${transaction['date']} • ${transaction['status']}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 Text(
-                  'XAF ${transaction['amount']}',
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: transaction['status'] == 'Completed'
-                        ? const Color(0xFF00C853)
-                        : Colors.orange,
+                    fontSize: 12,
+                    fontFamily: 'Poppins',
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
               ],
             ),
-          );
-        },
-      ),
-      const SizedBox(height: 16),
-      CustomButton(
-        text: 'Withdraw Earnings',
-        onPressed: () {
-          _showWithdrawDialog();
-        },
-      ),
-    ],
-  );
-
-  void _showWithdrawDialog() {
-    final TextEditingController amountController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Withdraw Earnings'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Enter amount to withdraw',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8)),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: 'Amount',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                labelText: 'Amount (XAF)',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Withdrawal request submitted')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
+          Text(
+            '${isPositive ? '+' : '-'}XAF ${_formatAmount(amount)}',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Poppins',
+              fontSize: 14,
+              color: isPositive ? AppColors.success : AppColors.error,
             ),
-            child: const Text('Withdraw'),
           ),
         ],
       ),

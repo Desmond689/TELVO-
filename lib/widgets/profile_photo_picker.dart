@@ -1,15 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:telvo/services/storage_service.dart';
 
 class ProfilePhotoPicker extends StatefulWidget {
-  final Function(String?) onPhotoSelected;
+  final Future<String?> Function(String filePath)? onPhotoSelected;
   final String? initialPhoto;
+  final String? userId;
 
   const ProfilePhotoPicker({
     super.key,
-    required this.onPhotoSelected,
+    this.onPhotoSelected,
     this.initialPhoto,
+    this.userId,
   });
 
   @override
@@ -26,39 +29,73 @@ class _ProfilePhotoPickerState extends State<ProfilePhotoPicker> {
     _photoUrl = widget.initialPhoto;
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
-    );
-
-    if (image != null) {
+  @override
+  void didUpdateWidget(ProfilePhotoPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialPhoto != widget.initialPhoto) {
       setState(() {
-        _photoUrl = image.path;
-        _isLoading = false;
+        _photoUrl = widget.initialPhoto;
       });
-      widget.onPhotoSelected(image.path);
     }
   }
 
-  Future<void> _takePhoto() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
-    );
+  Future<void> _pickImage() async {
+    await _selectAndUpload(ImageSource.gallery);
+  }
 
-    if (image != null) {
+  Future<void> _takePhoto() async {
+    await _selectAndUpload(ImageSource.camera);
+  }
+
+  Future<void> _selectAndUpload(ImageSource source) async {
+    final picker = ImagePicker();
+    try {
+      final image = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+
+      if (image == null || !mounted) return;
+
       setState(() {
         _photoUrl = image.path;
-        _isLoading = false;
+        _isLoading = true;
       });
-      widget.onPhotoSelected(image.path);
+
+      // Upload directly to Firebase Storage.
+      final url = await StorageService().uploadFileDirect(
+        file: File(image.path),
+        folder: 'profile_photos',
+        fileName:
+            '${widget.userId ?? 'user'}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+
+      if (!mounted) return;
+
+      if (url != null && url.isNotEmpty) {
+        setState(() {
+          _photoUrl = url;
+          _isLoading = false;
+        });
+        if (widget.onPhotoSelected != null) {
+          await widget.onPhotoSelected!(image.path);
+        }
+      } else {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not upload photo. Please try again.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Photo upload failed: $e')),
+      );
     }
   }
 
@@ -113,6 +150,12 @@ class _ProfilePhotoPickerState extends State<ProfilePhotoPicker> {
                     ? NetworkImage(_photoUrl!)
                     : FileImage(File(_photoUrl!)) as ImageProvider)
                 : null,
+            onBackgroundImageError: (_, __) {
+              // Fall back to the default icon if the image fails to load.
+              setState(() {
+                _photoUrl = null;
+              });
+            },
             child: _photoUrl == null
                 ? const Icon(Icons.person, size: 48, color: Colors.grey)
                 : null,

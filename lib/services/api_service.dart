@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:telvo/config/app_config.dart';
+import 'package:telvo/utils/error_messages.dart';
 
 class ApiService {
   factory ApiService() => _instance;
@@ -112,7 +113,7 @@ class ApiService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return json.decode(response.body);
     } else {
-      throw Exception('API Error: ${response.statusCode} - ${response.body}');
+      throw Exception(getFriendlyErrorMessage('API Error: ${response.statusCode} - ${response.body}'));
     }
   }
 

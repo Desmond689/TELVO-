@@ -1,5 +1,6 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -115,6 +116,10 @@ void main() async {
         storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
       ),
     );
+
+    // Disable Firestore offline persistence so the app only shows live data
+    // when an internet connection is available.
+    FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: false);
 
     // Initialize notification service
     await NotificationService().initialize();

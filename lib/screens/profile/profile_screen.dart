@@ -77,9 +77,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     children: [
       ProfilePhotoPicker(
         initialPhoto: user.profilePhoto,
+        userId: user.id,
         onPhotoSelected: (filePath) async {
           if (filePath == null) return;
-          await context.read<AuthProvider>().uploadProfilePhoto(filePath);
+          final url = await context
+              .read<AuthProvider>()
+              .uploadProfilePhoto(filePath);
+          if (url != null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile photo updated!')),
+            );
+          }
         },
       ),
       const SizedBox(height: 8),

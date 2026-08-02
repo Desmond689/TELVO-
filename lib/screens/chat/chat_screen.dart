@@ -5,9 +5,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:telvo/providers/chat_provider.dart';
 import 'package:telvo/providers/auth_provider.dart';
-import 'package:telvo/services/api_service.dart';
+import 'package:telvo/services/storage_service.dart';
 import 'package:telvo/models/chat_model.dart';
 import 'package:telvo/models/user_model.dart';
+import 'package:telvo/utils/error_messages.dart';
 import 'package:telvo/utils/helpers.dart';
 import 'package:telvo/widgets/empty_state.dart';
 
@@ -64,9 +65,9 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not open chat: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(getFriendlyErrorMessage(e))),
+        );
       }
     } finally {
       if (mounted) {
@@ -153,7 +154,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Message failed to send: ${e.toString()}')),
+          SnackBar(content: Text(getFriendlyErrorMessage(e))),
         );
       }
     }
@@ -175,13 +176,13 @@ class _ChatScreenState extends State<ChatScreen> {
     ).showSnackBar(const SnackBar(content: Text('Sending photo...')));
 
     try {
-      final response = await ApiService().uploadImage(
+      // Upload directly to Firebase Storage (no backend API needed).
+      final url = await StorageService().uploadFileDirect(
         file: File(picked.path),
         folder: 'chat_images/${_thread!.id}',
         fileName: '${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
-      final url = response['data']?['url'] ?? response['url'];
-      if (url is! String || url.isEmpty) {
+      if (url == null || url.isEmpty) {
         throw Exception('Upload failed');
       }
 
@@ -203,7 +204,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Couldn't send photo. Try again.")),
+          SnackBar(content: Text(getFriendlyErrorMessage(e))),
         );
       }
     }

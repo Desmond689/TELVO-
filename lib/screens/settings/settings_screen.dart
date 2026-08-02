@@ -123,11 +123,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildTile(
                 icon: Icons.phone,
                 title: 'Change Phone Number',
-                onTap: () {
+                onTap: () async {
+                  final controller = TextEditingController();
+                  final result = await showDialog<String>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Change phone number'),
+                      content: TextField(
+                        controller: controller,
+                        autofocus: true,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter new phone number',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(
+                            dialogContext,
+                            controller.text.trim(),
+                          ),
+                          child: const Text('Save'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (result == null || result.isEmpty) return;
+                  await context.read<AuthProvider>().updateProfile({
+                    'phoneNumber': result,
+                  });
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text(
-                        'Phone number updates will be available soon.',
+                        authProvider.error == null
+                            ? 'Phone number updated.'
+                            : authProvider.error!,
                       ),
                     ),
                   );

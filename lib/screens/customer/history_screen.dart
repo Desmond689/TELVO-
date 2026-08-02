@@ -65,11 +65,12 @@ class _HistoryScreenState extends State<HistoryScreen>
                   jobProvider.myJobs
                       .where((j) => j.status == 'completed')
                       .toList(),
+                  emptyMessage: 'Completed jobs are only visible to admins.',
                 ),
                 _buildHistoryList(
                   jobProvider.myJobs
                       .where(
-                        (j) => j.status == 'accepted' || j.status == 'working',
+                        (j) => ['accepted', 'working', 'in_progress', 'worker_selected', 'posted', 'quotes_received', 'notified'].contains(j.status),
                       )
                       .toList(),
                 ),
@@ -83,11 +84,11 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
-  Widget _buildHistoryList(List<JobModel> jobs) {
+  Widget _buildHistoryList(List<JobModel> jobs, {String? emptyMessage}) {
     if (jobs.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         title: 'No jobs found',
-        subtitle: 'Your job history will appear here.',
+        subtitle: emptyMessage ?? 'Your job history will appear here.',
         imagePath: 'assets/images/empty_state.png',
       );
     }

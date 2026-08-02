@@ -7,6 +7,8 @@ import 'package:telvo/models/job_model.dart';
 import 'package:telvo/providers/auth_provider.dart';
 import 'package:telvo/providers/job_provider.dart';
 import 'package:telvo/services/storage_service.dart';
+import 'package:telvo/utils/app_colors.dart';
+import 'package:telvo/utils/error_messages.dart';
 import 'package:telvo/utils/geo.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:telvo/widgets/custom_button.dart';
@@ -70,7 +72,7 @@ class _JobPostScreenState extends State<JobPostScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Post a Job')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -83,50 +85,103 @@ class _JobPostScreenState extends State<JobPostScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFB9F6CA)),
+                    color: AppColors.primaryBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      if (_selectedProfessionalId != null)
-                        const Text(
-                          'This request will be sent to the selected professional.',
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _selectedBusinessId != null
+                              ? 'This request will be sent to the selected business.'
+                              : 'This request will be sent to the selected professional.',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Poppins',
+                            color: AppColors.primaryDark,
+                          ),
                         ),
-                      if (_selectedBusinessId != null)
-                        const Text(
-                          'This request will be sent to the selected business.',
-                        ),
+                      ),
                     ],
                   ),
                 ),
-              Text(
+              // What service do you need?
+              const Text(
                 'What service do you need?',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               _buildCategorySelector(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+              // Describe the problem
+              const Text(
+                'Describe the problem',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              const SizedBox(height: 12),
               CustomTextField(
                 controller: _descriptionController,
-                hintText: 'Describe your problem',
+                hintText: 'Describe your problem in detail...',
                 maxLines: 4,
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? 'Please describe the problem'
                     : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+              // Photo upload section - prominent
+              const Text(
+                'Add Photos',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Show the problem - it helps professionals understand the job better',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'Poppins',
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+              const SizedBox(height: 12),
               _buildImagePicker(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+              // Budget
+              const Text(
+                'Budget',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              const SizedBox(height: 12),
               CustomTextField(
                 controller: _budgetController,
-                hintText: 'Budget (XAF)',
+                hintText: 'e.g. 25000',
+                labelText: 'Budget (XAF)',
                 keyboardType: TextInputType.number,
+                prefixIcon: const Icon(Icons.account_balance_wallet_rounded),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a budget';
@@ -138,28 +193,42 @@ class _JobPostScreenState extends State<JobPostScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+              // Address / Location
+              const Text(
+                'Location',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              const SizedBox(height: 12),
               CustomTextField(
                 controller: _addressController,
-                hintText: 'Address / Location',
+                hintText: 'Enter your address or describe your location',
+                labelText: 'Address / Location',
+                prefixIcon: const Icon(Icons.location_on_outlined),
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? 'Please enter an address or location'
                     : null,
               ),
-              const SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 20),
+              // Urgency
+              const Text(
                 'Urgency',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               _buildUrgencySelector(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               CustomButton(
                 text: 'Post Job',
+                icon: Icons.send_rounded,
                 isLoading: _isPosting,
                 onPressed: _isPosting ? null : _postJob,
               ),
@@ -188,24 +257,40 @@ class _JobPostScreenState extends State<JobPostScreen> {
               }
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                color: Theme.of(context).colorScheme.surfaceMuted,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _selectedCategory != null
+                      ? AppColors.primary.withValues(alpha: 0.4)
+                      : Colors.transparent,
+                ),
               ),
               child: Row(
                 children: [
+                  const Icon(
+                    Icons.category_outlined,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       _selectedCategory ?? 'Select category',
                       style: TextStyle(
                         color: _selectedCategory == null
-                            ? Colors.grey
+                            ? AppColors.textHint
                             : Theme.of(context).colorScheme.onSurface,
+                        fontSize: 14,
+                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),
-                  const Icon(Icons.search, color: Colors.grey),
+                  const Icon(
+                    Icons.arrow_drop_down_rounded,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
             ),
@@ -218,42 +303,84 @@ class _JobPostScreenState extends State<JobPostScreen> {
   Widget _buildImagePicker() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Row(
-        children: [
-          ElevatedButton.icon(
-            onPressed: _pickImages,
-            icon: const Icon(Icons.photo_camera),
-            label: const Text('Add Photos'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      // Large prominent upload button
+      GestureDetector(
+        onTap: _pickImages,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              width: 1.5,
+              style: BorderStyle.solid,
             ),
           ),
-          const SizedBox(width: 8),
-          if (_selectedImages.isNotEmpty)
-            Text('${_selectedImages.length} photos selected'),
-        ],
+          child: Column(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_a_photo_rounded,
+                  color: AppColors.primary,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Take or Upload Photos',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tap to add photos (up to 10)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Poppins',
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      if (_selectedImages.isNotEmpty)
+      if (_selectedImages.isNotEmpty) ...[
+        const SizedBox(height: 12),
         SizedBox(
-          height: 80,
+          height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: _selectedImages.length,
             itemBuilder: (context, index) {
               return Padding(
-                padding: const EdgeInsets.only(right: 8, top: 8),
+                padding: const EdgeInsets.only(right: 10),
                 child: Stack(
                   children: [
                     Container(
-                      width: 72,
-                      height: 72,
+                      width: 96,
+                      height: 96,
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: FileImage(File(_selectedImages[index].path)),
-                          fit: BoxFit.cover,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
                         ),
+                      ),
+                      child: Image.file(
+                        File(_selectedImages[index].path),
+                        fit: BoxFit.cover,
                       ),
                     ),
                     Positioned(
@@ -267,13 +394,16 @@ class _JobPostScreenState extends State<JobPostScreen> {
                         },
                         child: Container(
                           decoration: const BoxDecoration(
-                            color: Colors.red,
+                            color: Colors.black87,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Colors.white,
+                          child: const Padding(
+                            padding: EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -284,6 +414,7 @@ class _JobPostScreenState extends State<JobPostScreen> {
             },
           ),
         ),
+      ],
     ],
   );
 
@@ -294,17 +425,26 @@ class _JobPostScreenState extends State<JobPostScreen> {
         child: Padding(
           padding: const EdgeInsets.only(right: 8),
           child: FilterChip(
-            label: Text(urgency),
+            label: Text(
+              urgency,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
             selected: isSelected,
             onSelected: (selected) {
               setState(() {
                 _selectedUrgency = selected ? urgency : null;
               });
             },
-            selectedColor: const Color(0xFF00C853),
-            labelStyle: TextStyle(
-              color: isSelected ? Colors.white : Colors.black,
-            ),
+            selectedColor: urgency == 'Emergency'
+                ? AppColors.error
+                : AppColors.primary,
+            checkmarkColor: Colors.white,
+            showCheckmark: false,
           ),
         ),
       );
@@ -312,10 +452,16 @@ class _JobPostScreenState extends State<JobPostScreen> {
   );
 
   Future<void> _pickImages() async {
-    final images = await _picker.pickMultiImage();
-    setState(() {
-      _selectedImages = images ?? [];
-    });
+    final images = await _picker.pickMultiImage(
+      imageQuality: 85,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+    if (images != null) {
+      setState(() {
+        _selectedImages = images.take(10).toList();
+      });
+    }
   }
 
   Future<void> _postJob() async {
@@ -324,16 +470,8 @@ class _JobPostScreenState extends State<JobPostScreen> {
       _showError('Please select a service category.');
       return;
     }
-    if (_descriptionController.text.trim().isEmpty) {
-      _showError('Please describe your problem.');
-      return;
-    }
-    if (_budgetController.text.trim().isEmpty) {
-      _showError('Please enter a budget.');
-      return;
-    }
-    if (_addressController.text.trim().isEmpty) {
-      _showError('Please enter an address or location.');
+    if (_selectedUrgency == null) {
+      _showError('Please select an urgency level.');
       return;
     }
 
@@ -361,6 +499,7 @@ class _JobPostScreenState extends State<JobPostScreen> {
         urgency: _selectedUrgency,
         isEmergency: _selectedUrgency == 'Emergency',
         createdAt: DateTime.now(),
+        status: 'posted',
       );
 
       // Attempt to attach current location to the job for proximity matching
@@ -402,39 +541,92 @@ class _JobPostScreenState extends State<JobPostScreen> {
 
       await showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Job Posted!'),
-          content: const Text(
-            'Your job has been posted successfully. Nearby professionals will be notified.',
+        builder: (dialogContext) => Dialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(32),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                final navigator = Navigator.of(context);
-                if (navigator.canPop()) {
-                  navigator.pop();
-                }
-                if (navigator.canPop()) {
-                  navigator.pop();
-                }
-              },
-              child: const Text('OK'),
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: AppColors.successGradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.success.withValues(alpha: 0.3),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 48,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Job Posted!',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Poppins',
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Your job has been posted successfully.\nNearby professionals will be notified.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Poppins',
+                    height: 1.5,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: CustomButton(
+                    text: 'Done',
+                    onPressed: () {
+                      final navigator = Navigator.of(dialogContext);
+                      navigator.pop();
+                      navigator.pop();
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isPosting = false);
-      _showError(
-        'Failed to post job: ${e.toString().replaceFirst('Exception: ', '')}',
-      );
+      _showError(getFriendlyErrorMessage(e));
     }
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }

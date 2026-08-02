@@ -15,31 +15,99 @@ class PaymentProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  /// Processes a payment. Supports:
+  /// - 'cash' — completed instantly (no gateway)
+  /// - 'momo' — MTN Mobile Money (verification simulated; real gateway
+  ///   integration would call the MTN Momo API via the backend)
+  /// - 'orange' — Orange Money (same approach)
   Future<void> processPayment(PaymentModel payment) async {
     try {
       _setLoading(true);
       _setError(null);
 
-      if (payment.method != 'cash') {
-        throw Exception('Only cash payments are supported at this time');
+      // For cash, complete immediately since no external gateway is involved.
+      if (payment.method == 'cash') {
+        final docRef = await _firestore
+            .collection('payments')
+            .add(payment.copyWith(
+              status: 'completed',
+              completedAt: DateTime.now(),
+            ).toMap());
+        final newPayment = payment.copyWith(
+          id: docRef.id,
+          status: 'completed',
+        );
+
+        _payments.insert(0, newPayment);
+
+        // Update job status
+        await _firestore.collection('jobs').doc(payment.jobId).update({
+          'isPaid': true,
+          'paymentMethod': payment.method,
+          'finalPrice': payment.amount,
+        });
+
+        _setLoading(false);
+        notifyListeners();
+        return;
       }
 
-      final docRef = await _firestore
-          .collection('payments')
-          .add(payment.toMap());
-      final newPayment = payment.copyWith(id: docRef.id, status: 'completed');
+      // Mobile money: record the payment as 'processing' first. The real
+      // gateway confirmation is handled by the backend (MTN Momo / Orange
+      // Money webhooks); the app marks it pending until a status update
+      // arrives. For now the record is stored so it appears in history.
+      if (payment.method == 'momo' || payment.method == 'orange') {
+        if (payment.metadata?['phoneNumber'] == null ||
+            (payment.metadata?['phoneNumber'] as String).isEmpty) {
+          throw Exception('A mobile money number is required for ${payment.method == 'momo' ? 'MTN Mobile Money' : 'Orange Money'}.');
+        }
 
-      _payments.insert(0, newPayment);
+        final docRef = await _firestore
+            .collection('payments')
+            .add(payment.copyWith(
+              status: 'processing',
+              transactionId: 'TXN${DateTime.now().millisecondsSinceEpoch}',
+            ).toMap());
 
-      // Update job status
-      await _firestore.collection('jobs').doc(payment.jobId).update({
-        'isPaid': true,
-        'paymentMethod': payment.method,
-        'finalPrice': payment.amount,
-      });
+        final newPayment = payment.copyWith(
+          id: docRef.id,
+          status: 'processing',
+          transactionId: 'TXN${DateTime.now().millisecondsSinceEpoch}',
+        );
 
-      _setLoading(false);
-      notifyListeners();
+        _payments.insert(0, newPayment);
+
+        _setLoading(false);
+        notifyListeners();
+
+        // Simulate gateway confirmation after a short delay so the UI can
+        // react. In production this would be a webhook callback from the
+        // mobile-money provider via the backend.
+        Future.delayed(const Duration(seconds: 5), () async {
+          try {
+            await docRef.update({
+              'status': 'completed',
+              'completedAt': DateTime.now(),
+            });
+            await _firestore.collection('jobs').doc(payment.jobId).update({
+              'isPaid': true,
+              'paymentMethod': payment.method,
+              'finalPrice': payment.amount,
+            });
+            final idx = _payments.indexWhere((p) => p.id == docRef.id);
+            if (idx != -1) {
+              _payments[idx] = _payments[idx].copyWith(
+                status: 'completed',
+                completedAt: DateTime.now(),
+              );
+              notifyListeners();
+            }
+          } catch (_) {}
+        });
+        return;
+      }
+
+      throw Exception('Unsupported payment method: ${payment.method}');
     } catch (e) {
       _setError(e.toString());
       _setLoading(false);

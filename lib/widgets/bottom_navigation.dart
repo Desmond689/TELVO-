@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:telvo/utils/app_colors.dart';
 
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -12,27 +13,30 @@ class CustomBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: onTap,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF00C853),
-      unselectedItemColor: Colors.grey,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
+    return NavigationBar(
+      selectedIndex: currentIndex,
+      onDestinationSelected: onTap,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      indicatorColor: AppColors.primaryBackground,
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home),
           label: 'Home',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.search),
+        NavigationDestination(
+          icon: Icon(Icons.search_outlined),
+          selectedIcon: Icon(Icons.search),
           label: 'Search',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.history),
+        NavigationDestination(
+          icon: Icon(Icons.history_outlined),
+          selectedIcon: Icon(Icons.history),
           label: 'History',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
+        NavigationDestination(
+          icon: Icon(Icons.person_outline),
+          selectedIcon: Icon(Icons.person),
           label: 'Profile',
         ),
       ],
