@@ -170,7 +170,9 @@ class JobProvider extends ChangeNotifier {
       // Fetch the quote to determine the professional.
       final quoteDoc = await _firestore.collection('quotes').doc(quoteId).get();
       final professionalId = quoteDoc.exists
-          ? quoteDoc.data()?['professionalId'] as String?
+          ? (quoteDoc.data() != null
+              ? quoteDoc.data()!['professionalId'] as String?
+              : null)
           : null;
 
       final jobRef = _firestore.collection('jobs').doc(jobId);
@@ -201,10 +203,14 @@ class JobProvider extends ChangeNotifier {
         (j) => j.id == jobId,
         orElse: () => JobModel(),
       );
-      final quote = job.quotes?.firstWhere(
-        (q) => q.id == quoteId,
-        orElse: () => null,
-      );
+      QuoteModel? quote;
+      if (job.quotes != null) {
+        try {
+          quote = job.quotes!.firstWhere((q) => q.id == quoteId);
+        } catch (_) {
+          quote = null;
+        }
+      }
       if (quote != null && quote.jobId != null) {
         await _notificationService.notifyQuoteAccepted(quote);
       }
