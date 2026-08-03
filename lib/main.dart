@@ -17,8 +17,11 @@ import 'package:telvo/providers/admin_provider.dart';
 import 'package:telvo/theme/app_theme.dart';
 import 'package:telvo/config/app_config.dart';
 import 'package:telvo/config/routes.dart';
+import 'package:flutter/services.dart';
 import 'package:telvo/services/notification_service.dart';
 import 'package:telvo/services/app_update_service.dart';
+import 'package:telvo/services/foreground_notification_manager.dart';
+import 'package:telvo/services/app_navigator.dart';
 import 'package:telvo/screens/splash_screen.dart';
 import 'package:telvo/screens/welcome_screen.dart';
 import 'package:telvo/screens/auth/login_screen.dart';
@@ -57,9 +60,8 @@ import 'package:telvo/admin/admin_login.dart';
 import 'package:telvo/admin/admin_dashboard.dart';
 import 'package:telvo/admin/admin_main.dart';
 
-// Global navigator key for accessing context from anywhere
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
+// Global navigator key for accessing context from anywhere.
+// Provided from services/app_navigator.dart.
 void _checkForAppUpdate() {
   final updateService = AppUpdateService();
   updateService.checkForUpdate().then((update) {
@@ -169,6 +171,25 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     initAppUpdateCheck();
+
+    // Initialize the foreground notification manager to show a custom
+    // in-app banner for incoming messages.
+    try {
+      ForegroundNotificationManager().initialize();
+
+      // Also request the native layer to create the Android notification
+      // channel so background/system notifications use the same channel.
+      const method = MethodChannel('com.telvoapp/notifications');
+      method.invokeMethod('createNotificationChannel', {
+        'id': 'default_notification_channel',
+        'name': 'Default',
+        'importance': 'high',
+      }).catchError((e) {
+        debugPrint('Failed to create native notification channel: $e');
+      });
+    } catch (e) {
+      // ignore
+    }
   }
 
   @override

@@ -1,16 +1,51 @@
 // lib/services/notification_service.dart
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:telvo/models/job_model.dart';
 import 'package:telvo/models/notification_model.dart';
 
 class NotificationService {
-  NotificationService() {
-    _init();
+  static NotificationService? _instance;
+
+  /// Use NotificationService() in production. For tests, use
+  /// NotificationService.test(firestore: ...) to supply a fake Firestore.
+  factory NotificationService({FirebaseMessaging? fcm, FirebaseFirestore? firestore, Stream<String>? tokenRefreshStream, bool autoInit = true}) {
+    if (_instance == null) {
+      _instance = NotificationService._internal(
+        fcm ?? FirebaseMessaging.instance,
+        firestore ?? FirebaseFirestore.instance,
+        tokenRefreshStream: tokenRefreshStream,
+        autoInit: autoInit,
+      );
+    }
+    return _instance!;
   }
-  static final FirebaseMessaging _fcm = FirebaseMessaging.instance;
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Optional override stream for token refresh events during tests.
+  final Stream<String>? tokenRefreshStream;
+
+  /// Test constructor that returns a non-singleton used by tests.
+  NotificationService.test({required FirebaseFirestore firestore, this.tokenRefreshStream})
+      : _fcm = FirebaseMessaging.instance,
+        _firestore = firestore {
+    // Do not auto-initialize listeners in tests.
+  }
+
+  NotificationService._internal(this._fcm, this._firestore, {bool autoInit = true, this.tokenRefreshStream}) {
+    if (autoInit) _init();
+  }
+
+  final FirebaseMessaging _fcm;
+  final FirebaseFirestore _firestore;
+  StreamSubscription<String>? _tokenRefreshSubscription;
+
+  // Stream for UI components to listen for incoming foreground messages and
+  // show transient banners/snackbars.
+  static final StreamController<RemoteMessage> _onMessageStreamController = StreamController<RemoteMessage>.broadcast();
+  Stream<RemoteMessage> get onMessageStream => _onMessageStreamController.stream;
 
   Future<void> initialize() => _init();
 
@@ -26,7 +61,7 @@ class NotificationService {
       // Handle foreground messages
       FirebaseMessaging.onMessage.listen(_handleMessage);
 
-      // Handle background messages
+      // Handle background messages (static entrypoint)
       FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
 
       // Handle tap on notification
@@ -36,37 +71,134 @@ class NotificationService {
     }
   }
 
-  Future<void> registerToken(String userId) async {
+  /// Register the current device token in Firestore for [userId].
+  /// Optional [testingToken] can be provided by tests to avoid relying on FCM.
+  Future<void> registerToken(String userId, {String? testingToken}) async {
     try {
-      final token = await _fcm.getToken();
+      final token = testingToken ?? await _fcm.getToken();
       if (token != null) {
-        await _firestore.collection('users').doc(userId).update({
-          'fcmToken': token,
-        });
+        await _saveTokenToFirestore(userId, token);
       }
+
+      // Keep the user's Firestore doc updated when the FCM token rotates.
+      _tokenRefreshSubscription?.cancel();
+      final refreshStream = tokenRefreshStream ?? _fcm.onTokenRefresh;
+      _tokenRefreshSubscription = refreshStream.listen((newToken) async {
+        try {
+          if (newToken.isNotEmpty) {
+            await _saveTokenToFirestore(userId, newToken);
+            debugPrint('FCM token refreshed and saved for user $userId');
+          }
+        } catch (e) {
+          debugPrint('onTokenRefresh update error: $e');
+        }
+      });
     } catch (e) {
       debugPrint('registerToken error: $e');
     }
   }
 
+  /// Public helper that saves a token to Firestore. Useful for unit tests
+  /// and for the onTokenRefresh handler.
+  Future<void> _saveTokenToFirestore(String userId, String token) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'fcmToken': token,
+      });
+    } catch (e) {
+      debugPrint('_saveTokenToFirestore error: $e');
+    }
+  }
+
+  /// Removes the FCM token from the user's Firestore document. Call this on
+  /// sign-out so the backend no longer targets this device for notifications.
+  Future<void> unregisterToken(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'fcmToken': FieldValue.delete(),
+      });
+    } catch (e) {
+      debugPrint('unregisterToken error: $e');
+    }
+  }
+
   Future<void> _handleMessage(RemoteMessage message) async {
-    _showLocalNotification(message);
+    try {
+      // Broadcast to any in-app listeners (UI) so a transient banner can be shown.
+      if (!_onMessageStreamController.isClosed) {
+        _onMessageStreamController.add(message);
+      }
+    } catch (e) {
+      // ignore
+    }
+    await _showLocalNotification(message);
   }
 
   @pragma('vm:entry-point')
   static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-    // Handle background message
+    try {
+      // Background handlers run in their own isolate. Initialize Firebase
+      // minimally so Firestore can be used to persist the notification for the app UI.
+      await Firebase.initializeApp();
+      final firestore = FirebaseFirestore.instance;
+
+      // Safely extract fields from the message. message.data is usually
+      // Map<String, dynamic> but may be Map<String, String> depending on the
+      // sender. Normalize to a Map<String, dynamic>.
+      final Map<String, dynamic> data = Map<String, dynamic>.from(message.data ?? {});
+
+      final title = message.notification?.title ?? (data['title'] is String ? data['title'] as String : '');
+      final body = message.notification?.body ?? (data['body'] is String ? data['body'] as String : '');
+
+      final notif = <String, dynamic>{
+        'title': title,
+        'body': body,
+        'data': data,
+        'isRead': false,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      // Attempt to persist the notification. If Firestore is unreachable,
+      // catch and log but do not crash the background handler.
+      try {
+        await firestore.collection('notifications').add(notif);
+        debugPrint('Background message persisted to Firestore: ${notif['title']}');
+      } catch (e) {
+        debugPrint('Failed to persist background notification: $e');
+      }
+    } catch (e) {
+      debugPrint('background message handler error: $e');
+    }
   }
 
   void _handleMessageOpen(RemoteMessage message) {
-    // Navigate to appropriate screen
+    // Navigate to appropriate screen — handled by the UI layer when
+    // necessary. Keeping this lightweight to avoid retaining UI references.
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
-    debugPrint(
-      'Foreground push received: '
-      '${message.notification?.title} - ${message.notification?.body}',
-    );
+    try {
+      final data = Map<String, dynamic>.from(message.data ?? {});
+      final userId = (data['userId'] is String ? data['userId'] as String : (data['toUserId'] is String ? data['toUserId'] as String : null));
+      final title = message.notification?.title ?? (data['title'] is String ? data['title'] as String : '');
+      final body = message.notification?.body ?? (data['body'] is String ? data['body'] as String : '');
+
+      // Persist the notification so the in-app notifications screen shows it
+      if (userId != null && userId.isNotEmpty) {
+        await createNotification(
+          userId: userId,
+          title: title,
+          body: body,
+          data: data,
+        );
+      }
+
+      // Fallback logging for debugging / ephemeral UI (apps that prefer
+      // in-app banners can read the notifications collection to display them).
+      debugPrint('Foreground push received: $title - $body');
+    } catch (e) {
+      debugPrint('showLocalNotification error: $e');
+    }
   }
 
   /// Writes a notification document directly to Firestore. This is how the

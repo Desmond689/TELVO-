@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:telvo/config/routes.dart';
 import 'package:telvo/providers/auth_provider.dart';
+import 'package:telvo/utils/validators.dart';
 import 'package:telvo/widgets/custom_button.dart';
 import 'package:telvo/widgets/custom_text_field.dart';
 
@@ -145,15 +146,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 labelText: 'Email',
                 hintText: 'you@example.com',
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim())) {
-                    return 'Enter a valid email address';
-                  }
-                  return null;
-                },
+                validator: Validators.validateEmail,
               ),
               const SizedBox(height: 16),
               Row(
@@ -176,9 +169,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       labelText: 'Phone Number',
                       hintText: '6 70 12 34 56',
                       keyboardType: TextInputType.phone,
-                      validator: (value) => (value == null || value.isEmpty)
-                          ? 'Please enter your phone number'
-                          : null,
+                      validator: Validators.validateCameroonPhoneNumber,
                     ),
                   ),
                 ],

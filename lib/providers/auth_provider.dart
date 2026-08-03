@@ -558,6 +558,14 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     try {
       await _updateOnlineStatus(false);
+      if (_currentUser != null) {
+        try {
+          await NotificationService().unregisterToken(_currentUser!.id);
+        } catch (_) {
+          // ignore errors here - sign out should proceed regardless
+        }
+      }
+
       await _auth.signOut();
       await _secureStorage.delete(key: 'userId');
       _currentUser = null;
