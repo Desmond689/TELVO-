@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment
+.env
+.env.*
+*.env
+
+# Logs
+logs/
+*.log
+
+# Uploads
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Firebase
+*-service-account.json
+*firebase-adminsdk*.json
+serviceAccountKey.json
+firebase-debug.log
+
+# Coverage
+coverage/
+
+# Build
+dist/
+build/

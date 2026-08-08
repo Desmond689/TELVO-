@@ -1,0 +1,78 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
+}
+
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace = "com.telvoapp"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled = true
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    defaultConfig {
+        applicationId = "com.telvoapp"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+        multiDexEnabled = true
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                storePassword keystoreProperties['storePassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // Falls back to debug signing only if key.properties hasn't been
+            // created yet, so `flutter run --release` still works out of the
+            // box locally. A real release keystore MUST be configured (see
+            // key.properties.example) before publishing to Play Store.
+            signingConfig = keystorePropertiesFile.exists()
+                ? signingConfigs.getByName("release")
+                : signingConfigs.getByName("debug")
+        }
+    }
+}
+
+dependencies {
+    // NOTE: firebase_core/firebase_auth/cloud_firestore/firebase_storage/
+    // firebase_messaging (the Dart/Flutter plugins in pubspec.yaml) already
+    // pull in matching native Firebase Android SDK versions on their own.
+    // Manually pinning an old firebase-bom (32.0.0, ~mid-2023) here as well
+    // forces a version *older* than what those plugins need and can cause
+    // dependency-resolution conflicts or runtime NoSuchMethodErrors. Removed.
+    // If you specifically need native-only Firebase Analytics (no Dart API
+    // for it here), add the firebase_analytics Flutter plugin instead so its
+    // version stays in sync automatically.
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    implementation 'androidx.multidex:multidex:2.0.1'
+}
+
+flutter {
+    source = "../.."
+}

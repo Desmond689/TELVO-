@@ -1,0 +1,48 @@
+name: Build Release APK with Icons
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # Pin to a concrete Flutter release to avoid ambiguity in CI
+          # and ensure the flutter_launcher_icons step runs reliably.
+          flutter-version: '3.10.6'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate launcher icons
+        run: flutter pub run flutter_launcher_icons:main
+
+      - name: Commit generated launcher icons
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add android/app/src/main/res/mipmap-* || true
+          git add android/app/src/main/res/mipmap-*/ic_launcher* || true
+          if git diff --staged --quiet; then
+            echo "No icon changes to commit"
+          else
+            git commit -m "chore: add generated launcher icons [ci skip]" || true
+            git push https://${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:${{ github.ref_name }}
+          fi
+
+      - name: Build APK (release)
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
