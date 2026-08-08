@@ -113,8 +113,12 @@ class AppRoutes {
           builder: (_) => const ProfessionalProfileScreen(),
         );
       case hireWorker:
-        final id = settings.arguments is String ? settings.arguments as String : null;
-        return MaterialPageRoute(builder: (_) => HireWorkerScreen(professionalId: id));
+        final id = routeSettings.arguments is String
+            ? routeSettings.arguments as String
+            : null;
+        return MaterialPageRoute(
+          builder: (_) => HireWorkerScreen(professionalId: id),
+        );
       case jobPost:
         return MaterialPageRoute(builder: (_) => const JobPostScreen());
       case jobTracking:

@@ -432,9 +432,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (!_hasMarkedRead && userId != null && messages.isNotEmpty) {
                   _hasMarkedRead = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    context
-                        .read<ChatProvider>()
-                        .markMessagesAsRead(_thread!.id!, userId);
+                    context.read<ChatProvider>().markAsRead(_thread!.id!, userId);
                   });
                 }
 

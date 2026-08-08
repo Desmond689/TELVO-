@@ -91,7 +91,7 @@ class NotificationProvider extends ChangeNotifier {
         title: title,
         body: body,
         type: type,
-        data: data?.toString(),
+        data: data,
       );
 
       await _firestore.collection('notifications').add(notification.toMap());
