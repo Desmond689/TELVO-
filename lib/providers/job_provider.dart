@@ -36,9 +36,14 @@ class JobProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  bool _shouldShowInFeed(JobModel job, {String? currentUserId}) {
+  static bool shouldShowInFeed(JobModel job, {String? currentUserId}) {
     final status = job.status?.trim().toLowerCase();
-    if (status != 'posted' && status != 'open' && status != 'quotes_received') return false;
+    if (status != 'posted' &&
+        status != 'open' &&
+        status != 'quotes_received' &&
+        status != 'notified') {
+      return false;
+    }
     if (currentUserId != null && job.customerId == currentUserId) return false;
     if ((job.acceptedQuoteId ?? '').isNotEmpty) return false;
     if ((job.professionalId ?? '').isNotEmpty) return false;
@@ -66,7 +71,7 @@ class JobProvider extends ChangeNotifier {
             for (final doc in snapshot.docs) {
               try {
                 final job = JobModel.fromMap({...doc.data(), 'id': doc.id});
-                final showInFeed = _shouldShowInFeed(job);
+                final showInFeed = shouldShowInFeed(job);
                 if (showInFeed) {
                   temp.add(job);
                 } else {
@@ -115,7 +120,7 @@ class JobProvider extends ChangeNotifier {
           .get();
       _jobs = snapshot.docs
           .map((doc) => JobModel.fromMap({...doc.data(), 'id': doc.id}))
-          .where((job) => _shouldShowInFeed(job))
+          .where((job) => shouldShowInFeed(job))
           .toList();
       _jobs.sort((a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)));
       _setError(null);
@@ -169,7 +174,7 @@ class JobProvider extends ChangeNotifier {
       // see it immediately without waiting for the Firestore snapshot listener.
       try {
         final alreadyPresent = _jobs.any((j) => j.id == createdJob.id);
-        if (!alreadyPresent && _shouldShowInFeed(createdJob)) {
+        if (!alreadyPresent && shouldShowInFeed(createdJob)) {
           _jobs.insert(0, createdJob);
         }
       } catch (_) {}

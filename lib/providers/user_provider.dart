@@ -46,9 +46,7 @@ class UserProvider extends ChangeNotifier {
         .collection('users')
         .where('userType', whereIn: ['professional', 'both']);
 
-    if (category != null) {
-      query = query.where('categoryNormalized', isEqualTo: category.trim().toLowerCase());
-    }
+    final normalizedCategory = category?.trim().toLowerCase();
     if (area != null) {
       query = query.where('serviceAreas', arrayContains: area);
     }
@@ -91,6 +89,10 @@ class UserProvider extends ChangeNotifier {
             if (currentUserId != null && user.id == currentUserId) {
               return false;
             }
+            if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
+              final userCategory = (user.category ?? '').trim().toLowerCase();
+              return userCategory == normalizedCategory;
+            }
             return true;
           })
           .toList();
@@ -118,9 +120,7 @@ class UserProvider extends ChangeNotifier {
           .collection('users')
           .where('userType', whereIn: ['professional', 'both']);
 
-      if (category != null) {
-        query = query.where('categoryNormalized', isEqualTo: category.trim().toLowerCase());
-      }
+      final normalizedCategory = category?.trim().toLowerCase();
       if (area != null) {
         query = query.where('serviceAreas', arrayContains: area);
       }
@@ -164,6 +164,10 @@ class UserProvider extends ChangeNotifier {
               if (currentUserId != null && user.id == currentUserId) {
                 return false;
               }
+              if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
+                final userCategory = (user.category ?? '').trim().toLowerCase();
+                return userCategory == normalizedCategory;
+              }
               return true;
             })
             .toList();
@@ -178,8 +182,6 @@ class UserProvider extends ChangeNotifier {
             Query<Map<String, dynamic>> fallback = _firestore
                 .collection('users')
                 .where('userType', whereIn: ['professional', 'both']);
-
-            if (category != null) fallback = fallback.where('categoryNormalized', isEqualTo: category.trim().toLowerCase());
             if (area != null) fallback = fallback.where('serviceAreas', arrayContains: area);
             if (city != null) fallback = fallback.where('city', isEqualTo: city);
             if (verifiedOnly ?? false) fallback = fallback.where('isVerified', isEqualTo: true);
@@ -192,7 +194,16 @@ class UserProvider extends ChangeNotifier {
             final snap2 = await fallback.orderBy('rating', descending: true).get();
             final users2 = snap2.docs
                 .map((doc) => UserModel.fromMap(doc.data()).copyWith(id: doc.id))
-                .where((user) => !(currentUserId != null && user.id == currentUserId))
+                .where((user) {
+                  if (currentUserId != null && user.id == currentUserId) {
+                    return false;
+                  }
+                  if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
+                    final userCategory = (user.category ?? '').trim().toLowerCase();
+                    return userCategory == normalizedCategory;
+                  }
+                  return true;
+                })
                 .toList();
             _professionals = users2;
             _setError('Some advanced sorting requires a Firestore composite index. Showing a simplified result sorted by rating.');
@@ -235,9 +246,7 @@ class UserProvider extends ChangeNotifier {
         .collection('users')
         .where('userType', whereIn: ['professional', 'both']);
 
-    if (category != null) {
-      query = query.where('categoryNormalized', isEqualTo: category.trim().toLowerCase());
-    }
+    final normalizedCategory = category?.trim().toLowerCase();
     if (area != null) {
       query = query.where('serviceAreas', arrayContains: area);
     }
@@ -286,6 +295,10 @@ class UserProvider extends ChangeNotifier {
             if (currentUserId != null && user.id == currentUserId) {
               return false;
             }
+            if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
+              final userCategory = (user.category ?? '').trim().toLowerCase();
+              return userCategory == normalizedCategory;
+            }
             return true;
           })
           .toList();
@@ -312,8 +325,6 @@ class UserProvider extends ChangeNotifier {
           Query<Map<String, dynamic>> fallback = _firestore
               .collection('users')
               .where('userType', whereIn: ['professional', 'both']);
-
-          if (category != null) fallback = fallback.where('categoryNormalized', isEqualTo: category.trim().toLowerCase());
           if (area != null) fallback = fallback.where('serviceAreas', arrayContains: area);
           if (city != null) fallback = fallback.where('city', isEqualTo: city);
           if (verifiedOnly ?? false) fallback = fallback.where('isVerified', isEqualTo: true);
@@ -329,7 +340,16 @@ class UserProvider extends ChangeNotifier {
           final snap2 = await fallback.get();
           final workers2 = snap2.docs
               .map((doc) => UserModel.fromMap(doc.data()).copyWith(id: doc.id))
-              .where((user) => !(currentUserId != null && user.id == currentUserId))
+              .where((user) {
+                if (currentUserId != null && user.id == currentUserId) {
+                  return false;
+                }
+                if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
+                  final userCategory = (user.category ?? '').trim().toLowerCase();
+                  return userCategory == normalizedCategory;
+                }
+                return true;
+              })
               .toList();
 
           final lastDoc2 = snap2.docs.isNotEmpty ? snap2.docs.last : null;
