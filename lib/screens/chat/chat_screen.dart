@@ -810,11 +810,21 @@ class _MessageBubble extends StatelessWidget {
                   (message.mediaUrl?.trim().isNotEmpty ?? false)) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: RemoteImage(
-                    imageUrl: message.mediaUrl,
+                  child: Image.network(
+                    message.mediaUrl!.trim(),
                     width: 220,
                     fit: BoxFit.cover,
-                    errorWidget: Icon(
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return SizedBox(
+                        width: 220,
+                        height: 220,
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Icon(
                       Icons.broken_image,
                       color: textColor,
                     ),
