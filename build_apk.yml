@@ -1,0 +1,88 @@
+name: Build APK
+
+concurrency:
+  group: apk-build-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+
+      - name: Verify Cloudinary Configuration
+        shell: bash
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_UPLOAD_PRESET: ${{ secrets.CLOUDINARY_UPLOAD_PRESET }}
+        run: |
+          set -uo pipefail
+          missing=()
+
+          if [ -z "${CLOUDINARY_CLOUD_NAME:-}" ]; then
+            if [ -f .env ] && grep -q '^CLOUDINARY_CLOUD_NAME=' .env && ! grep -q "^CLOUDINARY_CLOUD_NAME=your_" .env; then
+              :
+            else
+              missing+=("CLOUDINARY_CLOUD_NAME")
+            fi
+          fi
+
+          if [ -z "${CLOUDINARY_UPLOAD_PRESET:-}" ]; then
+            if [ -f .env ] && grep -q '^CLOUDINARY_UPLOAD_PRESET=' .env && ! grep -q "^CLOUDINARY_UPLOAD_PRESET=your_" .env; then
+              :
+            else
+              missing+=("CLOUDINARY_UPLOAD_PRESET")
+            fi
+          fi
+
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::warning title=Cloudinary configuration::Cloudinary secrets are not fully configured; continuing with the build."
+            echo "Missing: ${missing[*]}"
+          else
+            echo "Cloudinary configuration present. Continuing build."
+          fi
+
+      - name: Set up Flutter
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/flutter/flutter.git --depth 1 -b stable "$HOME/flutter"
+          echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/flutter/bin:$PATH"
+          flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Clean previous build outputs
+        run: flutter clean
+
+      - name: Skip launcher icon generation in CI
+        run: echo "Skipping launcher icon generation; existing Android resources are already present."
+
+      - name: Prepare `.env` file for CI build
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            echo "No .env.example found; skipping env preparation"
+          fi
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

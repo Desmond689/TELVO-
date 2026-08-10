@@ -1,0 +1,24 @@
+// The Kotlin Gradle Plugin and google-services plugin are now declared
+// (with versions) in android/settings.gradle's pluginManagement/plugins
+// block. Do NOT also add a legacy buildscript{} classpath here - having
+// the Kotlin plugin on the classpath twice (once via buildscript, once
+// via settings.gradle) is what was causing the Gradle daemon crashes,
+// "workspace has been modified" isolation errors, and JVM target
+// mismatches.
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

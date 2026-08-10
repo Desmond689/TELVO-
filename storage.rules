@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidImage() {
+      return request.resource.size < 10 * 1024 * 1024 // 10MB max
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Profile photos: /profile_photos/{userId}.jpg
+    match /profile_photos/{fileName} {
+      allow read: if true; // public profile photos
+      allow write: if isSignedIn() &&
+        fileName == request.auth.uid + '.jpg' && isValidImage();
+    }
+
+    function isJobOwner(jobId) {
+      return isSignedIn() && exists(/databases/$(database)/documents/jobs/$(jobId)) &&
+        (get(/databases/$(database)/documents/jobs/$(jobId)).data.customerId == request.auth.uid ||
+         get(/databases/$(database)/documents/jobs/$(jobId)).data.professionalId == request.auth.uid);
+    }
+
+    // Job photos: /job_photos/{jobId}/{index}.jpg
+    // Only the job owner or assigned professional may upload images for a job;
+    // any signed-in user may read them because they are part of the job record.
+    match /job_photos/{jobId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isJobOwner(jobId) && isValidImage() && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Portfolio photos: /portfolio_photos/{userId}/{index}.jpg
+    match /portfolio_photos/{userId}/{fileName} {
+      allow read: if true; // public portfolio
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+    }
+
+    // Verification documents: private, owner + admin only
+    match /verification_docs/{userId}/{fileName} {
+      allow read: if isSignedIn() &&
+        (request.auth.uid == userId || request.auth.token.admin == true);
+      allow write: if isSignedIn() && request.auth.uid == userId &&
+        request.resource.size < 15 * 1024 * 1024;
+    }
+
+    // App releases: /app_releases/{versionCode}.apk - public download,
+    // upload restricted to admins via the web Admin > App Management page.
+    match /app_releases/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.token.admin == true &&
+        request.resource.size < 150 * 1024 * 1024;
+    }
+
+    // Deny everything else by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
