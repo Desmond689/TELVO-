@@ -51,6 +51,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     rating: professional.rating ?? 0,
                     jobs: professional.jobsCompleted ?? 0,
                     verified: professional.verificationStatus.toLowerCase() == 'verified' || professional.isVerified,
+                    isOnline: professional.isOnline,
                     photoUrl: professional.profilePhoto,
                     price: professional.startingPrice,
                     description: professional.description,

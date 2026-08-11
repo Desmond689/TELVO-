@@ -29,6 +29,7 @@ class _ChatScreenState extends State<ChatScreen> {
   ChatThread? _thread;
   UserModel? _otherUser;
   bool _isLoading = true;
+  bool _hasMarkedDelivered = false;
   bool _hasMarkedRead = false;
 
   // Cached so the messages listener isn't torn down and resubscribed on
@@ -538,6 +539,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 final messages = snapshot.data!;
 
+                if (!_hasMarkedDelivered && userId != null && messages.isNotEmpty) {
+                  _hasMarkedDelivered = true;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    context.read<ChatProvider>().markAsDelivered(_thread!.id!, userId);
+                  });
+                }
+
                 if (!_hasMarkedRead && userId != null && messages.isNotEmpty) {
                   _hasMarkedRead = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -758,16 +766,19 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bubbleColor = isMe
-        ? colorScheme.primary
+        ? (isDark ? colorScheme.primary : const Color(0xFFDCF8C6))
         : (isDark ? const Color(0xFF1F2C34) : Colors.white);
 
     final textColor = isMe
-        ? colorScheme.onPrimary
-        : colorScheme.onSurface;
+        ? (isDark ? Colors.white : Colors.black87)
+        : (isDark ? Colors.white70 : Colors.black87);
 
     final timeColor = isMe
-        ? colorScheme.onPrimary.withValues(alpha: 0.75)
-        : colorScheme.onSurface.withValues(alpha: 0.55);
+        ? (isDark ? Colors.white70 : Colors.black54)
+        : (isDark ? Colors.white54 : Colors.black54);
+
+    final statusColor = _statusColor(message, timeColor);
+    final statusText = _statusLabel(message);
 
     final time = message.timestamp ?? DateTime.now();
     final timeStr =
@@ -781,35 +792,36 @@ class _MessageBubble extends StatelessWidget {
         ),
         child: Container(
           margin: EdgeInsets.only(
-            top: 2,
-            bottom: 2,
-            left: isMe ? 48 : 4,
-            right: isMe ? 4 : 48,
+            top: 6,
+            bottom: 6,
+            left: isMe ? 48 : 8,
+            right: isMe ? 8 : 48,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: bubbleColor,
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(isMe ? 16 : 4),
-              bottomRight: Radius.circular(isMe ? 4 : 16),
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(isMe ? 18 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 18),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment:
+                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               if (message.type == 'image' &&
                   (message.mediaUrl?.trim().isNotEmpty ?? false)) ...[
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                   child: Image.network(
                     message.mediaUrl!.trim(),
                     width: 220,
@@ -833,33 +845,31 @@ class _MessageBubble extends StatelessWidget {
                 if ((message.message ?? '').isNotEmpty &&
                     message.message != '📷 Photo')
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       message.message!,
-                      style: TextStyle(color: textColor, fontSize: 15),
+                      style: TextStyle(color: textColor, fontSize: 15, height: 1.4),
                     ),
                   ),
               ] else
                 Text(
                   message.message ?? '',
-                  style: TextStyle(color: textColor, fontSize: 15, height: 1.3),
+                  style: TextStyle(color: textColor, fontSize: 15, height: 1.4),
                 ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 6),
               Row(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
                     timeStr,
                     style: TextStyle(fontSize: 11, color: timeColor),
                   ),
                   if (isMe) ...[
-                    const SizedBox(width: 4),
-                    Icon(
-                      _statusIcon(message),
-                      size: 14,
-                      color: message.isRead == true || message.isSeen == true
-                          ? const Color(0xFF53BDEB)
-                          : timeColor,
+                    const SizedBox(width: 6),
+                    Text(
+                      statusText,
+                      style: TextStyle(fontSize: 12, color: statusColor),
                     ),
                   ],
                 ],
@@ -871,9 +881,20 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
-  IconData _statusIcon(ChatMessage m) {
-    if (m.isRead == true || m.isSeen == true) return Icons.done_all;
-    if (m.isDelivered == true) return Icons.done_all;
-    return Icons.done;
+  String _statusLabel(ChatMessage m) {
+    if (m.isRead == true || m.isSeen == true) {
+      return '🔵✓✓';
+    }
+    if (m.isDelivered == true) {
+      return '✓✓';
+    }
+    return '✓';
+  }
+
+  Color _statusColor(ChatMessage m, Color defaultColor) {
+    if (m.isRead == true || m.isSeen == true) {
+      return const Color(0xFF53BDEB);
+    }
+    return defaultColor;
   }
 }

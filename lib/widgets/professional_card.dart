@@ -10,11 +10,13 @@ import 'package:telvo/utils/app_colors.dart';
 class ProfessionalCard extends StatelessWidget {
   final Professional professional;
   final VoidCallback onTap;
+  final VoidCallback? onHire;
 
   const ProfessionalCard({
     super.key,
     required this.professional,
     required this.onTap,
+    this.onHire,
   });
 
   @override
@@ -134,11 +136,37 @@ class ProfessionalCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(
-                      professional.name,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          professional.name,
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: professional.isOnline ? AppColors.online : AppColors.offline,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              professional.isOnline ? 'Online' : 'Offline',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   if (professional.verified)
@@ -157,7 +185,7 @@ class ProfessionalCard extends StatelessWidget {
                   SizedBox(
                     height: 30,
                     child: ElevatedButton(
-                      onPressed: onTap,
+                      onPressed: onHire ?? onTap,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDark ? Colors.white : theme.colorScheme.primary,
                         foregroundColor: isDark ? Colors.black : Colors.white,

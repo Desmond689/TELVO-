@@ -8,6 +8,14 @@
 import 'review_model.dart';
 export 'review_model.dart';
 
+String? _normalizePhotoUrl(dynamic value) {
+  if (value is String) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+  return null;
+}
+
 class JobModel {
   JobModel({
     this.id,
@@ -79,7 +87,10 @@ class JobModel {
       recurringFrequency: map['recurringFrequency'],
       businessId: map['businessId'],
       professionalName: map['professionalName'],
-      professionalImage: map['professionalImage'],
+      professionalImage: _normalizePhotoUrl(map['professionalImage']) ??
+          _normalizePhotoUrl(map['professionalPhoto']) ??
+          _normalizePhotoUrl(map['professionalPhotoUrl']) ??
+          _normalizePhotoUrl(map['professionalPhotoURL']),
     );
   }
   final String? id;
@@ -272,7 +283,10 @@ class QuoteModel {
       status: map['status'],
       createdAt: map['createdAt']?.toDate(),
       workerName: map['workerName'] as String?,
-      workerImage: map['workerImage'] as String?,
+      workerImage: _normalizePhotoUrl(map['workerImage']) ??
+          _normalizePhotoUrl(map['workerPhoto']) ??
+          _normalizePhotoUrl(map['workerPhotoUrl']) ??
+          _normalizePhotoUrl(map['workerPhotoURL']),
     );
   }
   final String? id;

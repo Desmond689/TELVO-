@@ -1,4 +1,12 @@
 // lib/models/user_model.dart
+String? _normalizePhotoUrl(dynamic value) {
+  if (value is String) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+  return null;
+}
+
 class UserModel {
   UserModel({
     this.id,
@@ -52,13 +60,20 @@ class UserModel {
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
+    final profilePhoto = _normalizePhotoUrl(map['profilePhoto']) ??
+        _normalizePhotoUrl(map['photoUrl']) ??
+        _normalizePhotoUrl(map['photoURL']) ??
+        _normalizePhotoUrl(map['photo']) ??
+        _normalizePhotoUrl(map['avatarUrl']) ??
+        _normalizePhotoUrl(map['avatar']);
+
     return UserModel(
       id: map['id'],
       username: map['username'],
       phoneNumber: map['phoneNumber'],
       email: map['email'],
       fullName: map['fullName'],
-      profilePhoto: map['profilePhoto'],
+      profilePhoto: profilePhoto,
       city: map['city'],
       neighborhood: map['neighborhood'],
       language: map['language'],

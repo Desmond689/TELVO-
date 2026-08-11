@@ -118,11 +118,19 @@ class ChatProvider extends ChangeNotifier {
           .doc(chatId)
           .collection('messages')
           .where('receiverId', isEqualTo: userId)
-          .where('read', isEqualTo: false)
           .get();
 
       for (final doc in messages.docs) {
-        await doc.reference.update({'read': true});
+        final data = doc.data();
+        final isRead = data['isRead'] == true || data['read'] == true;
+        if (!isRead) {
+          await doc.reference.update({
+            'read': true,
+            'isRead': true,
+            'isSeen': true,
+            'isDelivered': true,
+          });
+        }
       }
 
       await _firestore.collection('chats').doc(chatId).update({
@@ -130,6 +138,27 @@ class ChatProvider extends ChangeNotifier {
       });
     } catch (e) {
       debugPrint('Error marking messages as read: $e');
+    }
+  }
+
+  Future<void> markAsDelivered(String chatId, String userId) async {
+    try {
+      final messages = await _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .where('receiverId', isEqualTo: userId)
+          .get();
+
+      for (final doc in messages.docs) {
+        final data = doc.data();
+        final isDelivered = data['isDelivered'] == true || data['delivered'] == true;
+        if (!isDelivered) {
+          await doc.reference.update({'isDelivered': true});
+        }
+      }
+    } catch (e) {
+      debugPrint('Error marking messages as delivered: $e');
     }
   }
 
@@ -232,6 +261,8 @@ class ChatProvider extends ChangeNotifier {
             id: messageId,
             timestamp: message.timestamp ?? DateTime.now(),
             isRead: false,
+            isDelivered: false,
+            isSeen: false,
           )
           .toMap();
 

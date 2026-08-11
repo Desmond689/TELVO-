@@ -11,6 +11,7 @@ class Professional {
     required this.rating,
     required this.jobs,
     required this.verified,
+    this.isOnline = false,
     this.photoUrl,
     this.price,
     this.description,
@@ -21,6 +22,7 @@ class Professional {
   final double rating;
   final int jobs;
   final bool verified;
+  final bool isOnline;
   final String? photoUrl;
   final double? price;
   final String? description;

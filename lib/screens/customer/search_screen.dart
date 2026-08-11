@@ -5,12 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:telvo/config/routes.dart';
+import 'package:telvo/models/job_model.dart';
 import 'package:telvo/models/professional_display.dart';
 import 'package:telvo/models/user_model.dart';
+import 'package:telvo/providers/auth_provider.dart';
+import 'package:telvo/providers/job_provider.dart';
 import 'package:telvo/providers/user_provider.dart';
 import 'package:telvo/utils/app_colors.dart';
 import 'package:telvo/utils/lookup_data.dart';
 import 'package:telvo/widgets/empty_state.dart';
+import 'package:telvo/widgets/job_card.dart';
 import 'package:telvo/widgets/professional_card.dart';
 import 'package:telvo/widgets/searchable_option_picker.dart';
 import 'package:telvo/utils/helpers.dart';
@@ -29,6 +33,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String _selectedCategory = 'All';
   String _selectedCity = 'All';
   String _selectedAvailabilityStatus = 'All';
+  String _selectedJobStatus = 'All';
   String _searchText = '';
   double _minRating = 0;
   bool _verifiedOnly = false;
@@ -88,11 +93,61 @@ class _SearchScreenState extends State<SearchScreen> {
     }).toList();
   }
 
+  List<JobModel> _applyJobTextFilter(List<JobModel> jobs) {
+    if (_searchText.trim().isEmpty) return jobs;
+    final query = _searchText.trim().toLowerCase();
+    return jobs.where((job) {
+      final category = (job.category ?? '').toLowerCase();
+      final description = (job.description ?? '').toLowerCase();
+      final address = (job.address ?? '').toLowerCase();
+      return category.contains(query) ||
+          description.contains(query) ||
+          address.contains(query);
+    }).toList();
+  }
+
+  List<JobModel> _applyJobFilters(List<JobModel> jobs) {
+    final minPrice = _minPriceController.text.trim().isNotEmpty
+        ? double.tryParse(_minPriceController.text.trim())
+        : null;
+    final maxPrice = _maxPriceController.text.trim().isNotEmpty
+        ? double.tryParse(_maxPriceController.text.trim())
+        : null;
+
+    return jobs.where((job) {
+      if (_selectedCategory != 'All' &&
+          (job.category ?? '').toLowerCase() != _selectedCategory.toLowerCase()) {
+        return false;
+      }
+      if (_selectedCity != 'All' &&
+          !_jobAddressMatchesCity(job.address, _selectedCity)) {
+        return false;
+      }
+      if (minPrice != null && (job.budget ?? 0) < minPrice) {
+        return false;
+      }
+      if (maxPrice != null && (job.budget ?? double.infinity) > maxPrice) {
+        return false;
+      }
+      if (_selectedJobStatus != 'All' &&
+          (job.status ?? '').toLowerCase() != _selectedJobStatus.toLowerCase()) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  bool _jobAddressMatchesCity(String? address, String city) {
+    if (address == null || address.trim().isEmpty) return false;
+    return address.toLowerCase().contains(city.toLowerCase());
+  }
+
   void _resetFilters() {
     setState(() {
       _selectedCategory = 'All';
       _selectedCity = 'All';
       _selectedAvailabilityStatus = 'All';
+      _selectedJobStatus = 'All';
       _minRating = 0;
       _verifiedOnly = false;
       _availableOnly = false;
@@ -101,14 +156,14 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  bool _filtersActive() {
+  bool _filtersActive(bool isProfessionalSearch) {
     return _selectedCategory != 'All' ||
-        _verifiedOnly ||
-        _availableOnly ||
-        _minRating > 0 ||
         _minPriceController.text.trim().isNotEmpty ||
         _maxPriceController.text.trim().isNotEmpty ||
-        _selectedCity != 'All';
+        _selectedCity != 'All' ||
+        (isProfessionalSearch
+            ? _selectedJobStatus != 'All'
+            : _verifiedOnly || _availableOnly || _minRating > 0 || _selectedAvailabilityStatus != 'All');
   }
 
   Future<void> _selectCategory() async {
@@ -139,21 +194,43 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  Future<void> _selectAvailabilityStatus() async {
+  Future<void> _selectStatus(bool isProfessionalSearch) async {
+    final options = isProfessionalSearch
+        ? const ['All', 'posted', 'open', 'quotes_received', 'notified']
+        : const ['All', 'Online', 'Offline'];
+    final title = isProfessionalSearch ? 'Select Job Status' : 'Select Availability';
+    final currentValue = isProfessionalSearch ? _selectedJobStatus : _selectedAvailabilityStatus;
+
     final selected = await showSearchableOptionPicker(
       context: context,
-      title: 'Select Availability',
-      options: const ['All', 'Online', 'Offline'],
-      initialValue: _selectedAvailabilityStatus != 'All' ? _selectedAvailabilityStatus : null,
+      title: title,
+      options: options,
+      initialValue: currentValue != 'All' ? currentValue : null,
     );
     if (selected != null) {
       setState(() {
-        _selectedAvailabilityStatus = selected;
+        if (isProfessionalSearch) {
+          _selectedJobStatus = selected;
+        } else {
+          _selectedAvailabilityStatus = selected;
+        }
       });
     }
   }
 
-  void _openFilterSheet() {
+  void _openFilterSheet(bool isProfessionalSearch) {
+    final statusOptions = isProfessionalSearch
+        ? const ['All', 'posted', 'open', 'quotes_received', 'notified']
+        : const ['All', 'Online', 'Offline'];
+    final tempMinPriceController = TextEditingController(text: _minPriceController.text);
+    final tempMaxPriceController = TextEditingController(text: _maxPriceController.text);
+    String tempCategory = _selectedCategory;
+    String tempCity = _selectedCity;
+    String tempStatus = isProfessionalSearch ? _selectedJobStatus : _selectedAvailabilityStatus;
+    double tempMinRating = _minRating;
+    bool tempVerified = _verifiedOnly;
+    bool tempAvailable = _availableOnly;
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -161,14 +238,6 @@ class _SearchScreenState extends State<SearchScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        // Temporary copy of filters
-        String tempCategory = _selectedCategory;
-        String tempCity = _selectedCity;
-        double tempMinRating = _minRating;
-        bool tempVerified = _verifiedOnly;
-        bool tempAvailable = _availableOnly;
-        String tempSort = 'Highest Rated';
-
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
@@ -187,9 +256,12 @@ class _SearchScreenState extends State<SearchScreen> {
                             setModalState(() {
                               tempCategory = 'All';
                               tempCity = 'All';
+                              tempStatus = 'All';
                               tempMinRating = 0;
                               tempVerified = false;
                               tempAvailable = false;
+                              tempMinPriceController.text = '';
+                              tempMaxPriceController.text = '';
                             });
                           },
                           child: const Text('Reset'),
@@ -203,63 +275,110 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Sort'),
+                        if (isProfessionalSearch) ...[
+                          const Text('Job Status'),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            value: tempStatus,
+                            items: statusOptions
+                                .map((status) => DropdownMenuItem(value: status, child: Text(status)))
+                                .toList(),
+                            onChanged: (v) => setModalState(() => tempStatus = v ?? 'All'),
+                          ),
+                          const SizedBox(height: 16),
+                        ] else ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Verified Only'),
+                              Switch(
+                                value: tempVerified,
+                                onChanged: (v) => setModalState(() => tempVerified = v),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Available Today'),
+                              Switch(
+                                value: tempAvailable,
+                                onChanged: (v) => setModalState(() => tempAvailable = v),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Text('Minimum rating'),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              ChoiceChip(
+                                label: const Text('Any'),
+                                selected: tempMinRating == 0,
+                                onSelected: (_) => setModalState(() => tempMinRating = 0),
+                              ),
+                              ChoiceChip(
+                                label: const Text('3+'),
+                                selected: tempMinRating == 3,
+                                onSelected: (_) => setModalState(() => tempMinRating = 3),
+                              ),
+                              ChoiceChip(
+                                label: const Text('4+'),
+                                selected: tempMinRating == 4,
+                                onSelected: (_) => setModalState(() => tempMinRating = 4),
+                              ),
+                              ChoiceChip(
+                                label: const Text('4.5+'),
+                                selected: tempMinRating == 4.5,
+                                onSelected: (_) => setModalState(() => tempMinRating = 4.5),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        const Text('Category'),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
-                          value: tempSort,
-                          items: const [
-                            DropdownMenuItem(value: 'Highest Rated', child: Text('Highest Rated')),
-                            DropdownMenuItem(value: 'Fastest Response', child: Text('Fastest Response')),
-                            DropdownMenuItem(value: 'Available Today', child: Text('Available Today')),
-                          ],
-                          onChanged: (v) => setModalState(() => tempSort = v ?? 'Highest Rated'),
+                          value: tempCategory,
+                          items: ['All', ...LookupData.jobCategories]
+                              .map((category) => DropdownMenuItem(value: category, child: Text(category)))
+                              .toList(),
+                          onChanged: (v) => setModalState(() => tempCategory = v ?? 'All'),
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Verified Only'),
-                            Switch(
-                              value: tempVerified,
-                              onChanged: (v) => setModalState(() => tempVerified = v),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Available Today'),
-                            Switch(
-                              value: tempAvailable,
-                              onChanged: (v) => setModalState(() => tempAvailable = v),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Text('Minimum rating'),
+                        const Text('Location'),
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
+                        DropdownButtonFormField<String>(
+                          value: tempCity,
+                          items: ['All', ...LookupData.supportedCities]
+                              .map((city) => DropdownMenuItem(value: city, child: Text(city)))
+                              .toList(),
+                          onChanged: (v) => setModalState(() => tempCity = v ?? 'All'),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text('Budget range (XAF)'),
+                        const SizedBox(height: 8),
+                        Row(
                           children: [
-                            ChoiceChip(
-                              label: const Text('Any'),
-                              selected: tempMinRating == 0,
-                              onSelected: (_) => setModalState(() => tempMinRating = 0),
+                            Expanded(
+                              child: TextField(
+                                controller: tempMinPriceController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  hintText: 'Min',
+                                ),
+                              ),
                             ),
-                            ChoiceChip(
-                              label: const Text('3+'),
-                              selected: tempMinRating == 3,
-                              onSelected: (_) => setModalState(() => tempMinRating = 3),
-                            ),
-                            ChoiceChip(
-                              label: const Text('4+'),
-                              selected: tempMinRating == 4,
-                              onSelected: (_) => setModalState(() => tempMinRating = 4),
-                            ),
-                            ChoiceChip(
-                              label: const Text('4.5+'),
-                              selected: tempMinRating == 4.5,
-                              onSelected: (_) => setModalState(() => tempMinRating = 4.5),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                controller: tempMaxPriceController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  hintText: 'Max',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -271,9 +390,16 @@ class _SearchScreenState extends State<SearchScreen> {
                               setState(() {
                                 _selectedCategory = tempCategory;
                                 _selectedCity = tempCity;
+                                if (isProfessionalSearch) {
+                                  _selectedJobStatus = tempStatus;
+                                } else {
+                                  _selectedAvailabilityStatus = tempStatus;
+                                }
                                 _minRating = tempMinRating;
                                 _verifiedOnly = tempVerified;
                                 _availableOnly = tempAvailable;
+                                _minPriceController.text = tempMinPriceController.text;
+                                _maxPriceController.text = tempMaxPriceController.text;
                               });
                               Navigator.pop(context);
                             },
@@ -294,7 +420,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final jobProvider = context.watch<JobProvider>();
     final userProvider = context.read<UserProvider>();
+    final isProfessionalSearch = authProvider.isProfessionalMode;
     final category = _selectedCategory == 'All' ? null : _selectedCategory;
     final city = _selectedCity == 'All' ? null : _selectedCity;
     final minPrice = _minPriceController.text.trim().isNotEmpty
@@ -303,9 +432,9 @@ class _SearchScreenState extends State<SearchScreen> {
     final maxPrice = _maxPriceController.text.trim().isNotEmpty
         ? double.tryParse(_maxPriceController.text.trim())
         : null;
-    final availabilityStatus = _selectedAvailabilityStatus == 'All'
-        ? null
-        : _selectedAvailabilityStatus;
+    final availabilityStatus = (!isProfessionalSearch && _selectedAvailabilityStatus != 'All')
+        ? _selectedAvailabilityStatus
+        : null;
 
     return Scaffold(
       body: SafeArea(
@@ -329,7 +458,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         onChanged: (value) => setState(() => _searchText = value),
                         style: const TextStyle(fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: 'Search professionals...',
+                          hintText: isProfessionalSearch ? 'Search jobs...' : 'Search professionals...',
                           hintStyle: TextStyle(
                             fontSize: 14,
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
@@ -353,10 +482,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     height: 44,
                     child: IconButton(
                       tooltip: 'Filters',
-                      onPressed: _openFilterSheet,
+                      onPressed: () => _openFilterSheet(isProfessionalSearch),
                       icon: Icon(
                         Icons.tune_rounded,
-                        color: _filtersActive() ? AppColors.primary : null,
+                        color: _filtersActive(isProfessionalSearch) ? AppColors.primary : null,
                       ),
                       visualDensity: VisualDensity.compact,
                       style: IconButton.styleFrom(
@@ -407,7 +536,7 @@ class _SearchScreenState extends State<SearchScreen> {
             const SizedBox(height: 6),
 
             // Active filter pills
-            if (_filtersActive())
+            if (_filtersActive(isProfessionalSearch))
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: SingleChildScrollView(
@@ -422,7 +551,31 @@ class _SearchScreenState extends State<SearchScreen> {
                             onDeleted: () => setState(() => _selectedCategory = 'All'),
                           ),
                         ),
-                      if (_verifiedOnly)
+                      if (_selectedCity != 'All')
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InputChip(
+                            label: Text(_selectedCity),
+                            onDeleted: () => setState(() => _selectedCity = 'All'),
+                          ),
+                        ),
+                      if (isProfessionalSearch && _selectedJobStatus != 'All')
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InputChip(
+                            label: Text(_selectedJobStatus),
+                            onDeleted: () => setState(() => _selectedJobStatus = 'All'),
+                          ),
+                        ),
+                      if (!isProfessionalSearch && _selectedAvailabilityStatus != 'All')
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InputChip(
+                            label: Text(_selectedAvailabilityStatus),
+                            onDeleted: () => setState(() => _selectedAvailabilityStatus = 'All'),
+                          ),
+                        ),
+                      if (!isProfessionalSearch && _verifiedOnly)
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: InputChip(
@@ -430,7 +583,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             onDeleted: () => setState(() => _verifiedOnly = false),
                           ),
                         ),
-                      if (_availableOnly)
+                      if (!isProfessionalSearch && _availableOnly)
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: InputChip(
@@ -438,12 +591,28 @@ class _SearchScreenState extends State<SearchScreen> {
                             onDeleted: () => setState(() => _availableOnly = false),
                           ),
                         ),
-                      if (_minRating > 0)
+                      if (!isProfessionalSearch && _minRating > 0)
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: InputChip(
                             label: Text('${_minRating.toString()}+ Stars'),
                             onDeleted: () => setState(() => _minRating = 0),
+                          ),
+                        ),
+                      if (_minPriceController.text.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InputChip(
+                            label: Text('Min: ${_minPriceController.text.trim()}'),
+                            onDeleted: () => setState(() => _minPriceController.clear()),
+                          ),
+                        ),
+                      if (_maxPriceController.text.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InputChip(
+                            label: Text('Max: ${_maxPriceController.text.trim()}'),
+                            onDeleted: () => setState(() => _maxPriceController.clear()),
                           ),
                         ),
                       TextButton(
@@ -457,110 +626,116 @@ class _SearchScreenState extends State<SearchScreen> {
 
             const SizedBox(height: 8),
             Expanded(
-              child: StreamBuilder<List<UserModel>>(
-                // key forces the StreamBuilder to resubscribe to a fresh
-                // stream whenever the category filter changes.
-                key: ValueKey([
-                  category,
-                  city,
-                  _verifiedOnly,
-                  _availableOnly,
-                  _minRating,
-                  minPrice,
-                  maxPrice,
-                  availabilityStatus,
-                ]),
-                stream: userProvider.getProfessionals(
-                  category: category,
-                  city: city,
-                  minRating: _minRating > 0 ? _minRating : null,
-                  minPrice: minPrice,
-                  maxPrice: maxPrice,
-                  availabilityStatus: availabilityStatus,
-                  verifiedOnly: _verifiedOnly,
-                  onlineOnly: _availableOnly,
-                ),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(strokeWidth: 3),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                  final error = snapshot.error;
-
-                  // Offline is decided from the continuously-maintained
-                  // connectivity state, not re-derived from this error.
-                  // A stream/query error and "no internet" are genuinely
-                  // different states and must not be conflated: a
-                  // Firestore/index/permission/parsing error can happen
-                  // while fully online, and should say so.
-                  if (_isOffline) {
-                    return EmptyState(
-                      title: 'No Internet Connection',
-                      subtitle: 'Connect to the internet to refresh available professionals.',
-                      imagePath: 'assets/images/no_connection.png',
-                      onAction: () async {
-                        final online = await Helpers.checkInternetConnection();
-                        if (mounted) setState(() => _isOffline = !online);
-                      },
-                      actionText: 'Retry',
-                    );
-                  }
-
-                  if (error is FirebaseException &&
-                      (error.code == 'failed-precondition' ||
-                          (error.message?.toLowerCase().contains('requires an index') ?? false))) {
-                    return _buildSearchErrorState(
-                      'Search is temporarily limited by backend indexing. Try different filters or refresh.',
-                    );
-                  }
-                  if (error is FirebaseException && error.code == 'permission-denied') {
-                    return _buildSearchErrorState(
-                      "You don't have permission to view this. Try signing out and back in.",
-                    );
-                  }
-
-                  final message = error is FirebaseException
-                      ? (error.message ?? 'Unable to load search results. Please try again.')
-                      : 'Something went wrong loading professionals. Please try again.';
-                  return _buildSearchErrorState(message);
-                }
-
-                final professionals = _applyTextFilter(snapshot.data ?? []);
-
-                  if (professionals.isEmpty) {
-                    return _buildEmptyState();
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
-                    itemCount: professionals.length,
-                    itemBuilder: (context, index) {
-                      final professional = professionals[index];
-                      return ProfessionalCard(
-                        professional: Professional(
-                          name: professional.fullName ?? 'Unknown',
-                          title: professional.category ?? 'Professional',
-                          rating: professional.rating ?? 0,
-                          jobs: professional.jobsCompleted ?? 0,
-                          verified: professional.verificationStatus.toLowerCase() == 'verified' || professional.isVerified,
-                          photoUrl: professional.profilePhoto,
-                          price: professional.startingPrice,
-                          description: professional.description,
-                        ),
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.professionalProfile,
-                            arguments: professional,
+              child: isProfessionalSearch
+                  ? _buildWorkerSearchResults(jobProvider)
+                  : StreamBuilder<List<UserModel>>(
+                      // key forces the StreamBuilder to resubscribe to a fresh
+                      // stream whenever the category filter changes.
+                      key: ValueKey([
+                        category,
+                        city,
+                        _verifiedOnly,
+                        _availableOnly,
+                        _minRating,
+                        minPrice,
+                        maxPrice,
+                        availabilityStatus,
+                      ]),
+                      stream: userProvider.getProfessionals(
+                        category: category,
+                        city: city,
+                        minRating: _minRating > 0 ? _minRating : null,
+                        minPrice: minPrice,
+                        maxPrice: maxPrice,
+                        availabilityStatus: availabilityStatus,
+                        verifiedOnly: _verifiedOnly,
+                        onlineOnly: _availableOnly,
+                      ),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(strokeWidth: 3),
                           );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
+                        }
+                        if (snapshot.hasError) {
+                          final error = snapshot.error;
+
+                          if (_isOffline) {
+                            return EmptyState(
+                              title: 'No Internet Connection',
+                              subtitle: 'Connect to the internet to refresh available professionals.',
+                              imagePath: 'assets/images/no_connection.png',
+                              onAction: () async {
+                                final online = await Helpers.checkInternetConnection();
+                                if (mounted) setState(() => _isOffline = !online);
+                              },
+                              actionText: 'Retry',
+                            );
+                          }
+
+                          if (error is FirebaseException &&
+                              (error.code == 'failed-precondition' ||
+                                  (error.message?.toLowerCase().contains('requires an index') ?? false))) {
+                            return _buildSearchErrorState(
+                              'Search is temporarily limited by backend indexing. Try different filters or refresh.',
+                            );
+                          }
+                          if (error is FirebaseException && error.code == 'permission-denied') {
+                            return _buildSearchErrorState(
+                              "You don't have permission to view this. Try signing out and back in.",
+                            );
+                          }
+
+                          final message = error is FirebaseException
+                              ? (error.message ?? 'Unable to load search results. Please try again.')
+                              : 'Something went wrong loading professionals. Please try again.';
+                          return _buildSearchErrorState(message);
+                        }
+
+                        final professionals = _applyTextFilter(snapshot.data ?? []);
+
+                        if (professionals.isEmpty) {
+                          return _buildEmptyState();
+                        }
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
+                          itemCount: professionals.length,
+                          itemBuilder: (context, index) {
+                            final professional = professionals[index];
+                            return ProfessionalCard(
+                              professional: Professional(
+                                name: professional.fullName ?? 'Unknown',
+                                title: professional.category ?? 'Professional',
+                                rating: professional.rating ?? 0,
+                                jobs: professional.jobsCompleted ?? 0,
+                                verified: professional.verificationStatus.toLowerCase() == 'verified' || professional.isVerified,
+                                isOnline: professional.isOnline,
+                                photoUrl: professional.profilePhoto,
+                                price: professional.startingPrice,
+                                description: professional.description,
+                              ),
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.professionalProfile,
+                                  arguments: professional,
+                                );
+                              },
+                              onHire: () {
+                                if (professional.id != null) {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.hireWorker,
+                                    arguments: professional.id,
+                                  );
+                                }
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -623,9 +798,167 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
  
+  Widget _buildWorkerSearchResults(JobProvider jobProvider) {
+    final jobs = _applyJobTextFilter(jobProvider.jobs);
+    final filteredJobs = _applyJobFilters(jobs);
+
+    if (jobProvider.isLoading && filteredJobs.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(strokeWidth: 3),
+      );
+    }
+
+    if (_isOffline) {
+      return EmptyState(
+        title: 'No Internet Connection',
+        subtitle: 'Connect to the internet to refresh available jobs.',
+        imagePath: 'assets/images/no_connection.png',
+        onAction: () async {
+          final online = await Helpers.checkInternetConnection();
+          if (mounted) setState(() => _isOffline = !online);
+        },
+        actionText: 'Retry',
+      );
+    }
+
+    if (jobProvider.error != null) {
+      return _buildSearchErrorState(jobProvider.error!);
+    }
+
+    if (filteredJobs.isEmpty) {
+      return _buildJobEmptyState();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
+      itemCount: filteredJobs.length,
+      itemBuilder: (context, index) {
+        final job = filteredJobs[index];
+        return JobCard(
+          job: job,
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.jobDetails,
+              arguments: job,
+            );
+          },
+          showAction: true,
+          actionText: 'Submit Quote',
+          onAction: () => _showQuoteDialog(job),
+        );
+      },
+    );
+  }
+
+  void _showQuoteDialog(JobModel job) {
+    final priceController = TextEditingController();
+    final estimatedTimeController = TextEditingController();
+    final messageController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Theme.of(dialogContext).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Send Quote', style: TextStyle(fontWeight: FontWeight.w700)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${job.category ?? 'Service'} • XAF ${job.budget?.toStringAsFixed(0) ?? 'N/A'}',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(dialogContext).colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: priceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Price (XAF)', hintText: 'e.g. 25000'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: estimatedTimeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Estimated Time (hours)', hintText: 'e.g. 3'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: messageController,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Message', hintText: 'Tell the customer about your offer'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final currentUserId = context.read<AuthProvider>().currentUser?.id;
+              if (currentUserId == null) {
+                Navigator.pop(dialogContext);
+                return;
+              }
+
+              final price = double.tryParse(priceController.text.trim()) ?? 0;
+              final estimatedTime = int.tryParse(estimatedTimeController.text.trim()) ?? 0;
+              final message = messageController.text.trim();
+
+              if (price <= 0 || estimatedTime <= 0 || message.isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Please fill all quote fields.')),
+                );
+                return;
+              }
+
+              Navigator.pop(dialogContext);
+              try {
+                await context.read<JobProvider>().sendQuote(
+                      QuoteModel(
+                        professionalId: currentUserId,
+                        jobId: job.id,
+                        price: price,
+                        estimatedTime: estimatedTime,
+                        message: message,
+                        status: 'pending',
+                        createdAt: DateTime.now(),
+                      ),
+                    );
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Quote sent successfully.')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to send quote: $e')),
+                );
+              }
+            },
+            child: const Text('Send Quote'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJobEmptyState() => const EmptyState(
+        title: 'No jobs found',
+        subtitle: 'Try adjusting your search or filters',
+        imagePath: 'assets/images/empty_state.png',
+      );
+
   Widget _buildEmptyState() => const EmptyState(
-    title: 'No professionals found',
-    subtitle: 'Try adjusting your search or filters',
-    imagePath: 'assets/images/empty_state.png',
-  );
+        title: 'No professionals found',
+        subtitle: 'Try adjusting your search or filters',
+        imagePath: 'assets/images/empty_state.png',
+      );
 }

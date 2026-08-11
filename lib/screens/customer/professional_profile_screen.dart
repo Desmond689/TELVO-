@@ -9,7 +9,9 @@ import 'package:telvo/providers/user_provider.dart';
 import 'package:telvo/widgets/rating_stars.dart';
 import 'package:telvo/widgets/custom_button.dart';
 import 'package:telvo/config/routes.dart';
+import 'package:telvo/utils/app_colors.dart';
 import 'package:telvo/widgets/remote_image.dart';
+import 'package:telvo/widgets/safe_avatar.dart';
 
 class ProfessionalProfileScreen extends StatefulWidget {
   const ProfessionalProfileScreen({super.key});
@@ -103,48 +105,89 @@ class _ProfessionalProfileScreenState extends State<ProfessionalProfileScreen> {
                     bottom: 16,
                     left: 16,
                     right: 16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              professional.fullName ?? 'Unknown',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            if (professional.verificationStatus?.toLowerCase() == 'verified' || professional.isVerified)
-                              const Icon(
-                                Icons.verified,
-                                color: Color(0xFF00C853),
-                                size: 24,
-                              ),
-                          ],
+                        SafeAvatar(
+                          imageUrl: professional.profilePhoto,
+                          radius: 34,
+                          backgroundColor: Colors.white24,
+                          fallbackIconColor: Colors.white,
                         ),
-                        Text(
-                          professional.category ?? 'Professional',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 16,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      professional.fullName ?? 'Unknown',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  if (professional.verificationStatus?.toLowerCase() == 'verified' || professional.isVerified)
+                                    const Icon(
+                                      Icons.verified,
+                                      color: Color(0xFF00C853),
+                                      size: 24,
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                professional.category ?? 'Professional',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: professional.isOnline ? AppColors.online : AppColors.offline,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    professional.isOnline ? 'Online' : 'Offline',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  RatingStars(rating: professional.rating ?? 0),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '(${professional.jobsCompleted ?? 0} jobs)',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            RatingStars(rating: professional.rating ?? 0),
-                            const SizedBox(width: 8),
-                            Text(
-                              '(${professional.jobsCompleted ?? 0} jobs)',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),

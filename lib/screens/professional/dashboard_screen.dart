@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:telvo/models/job_model.dart';
@@ -7,6 +10,7 @@ import 'package:telvo/providers/job_provider.dart';
 import 'package:telvo/providers/payment_provider.dart';
 import 'package:telvo/config/routes.dart';
 import 'package:telvo/utils/app_colors.dart';
+import 'package:telvo/utils/helpers.dart';
 import 'package:telvo/widgets/safe_avatar.dart';
 
 class ProfessionalDashboardScreen extends StatefulWidget {
@@ -21,10 +25,13 @@ class _ProfessionalDashboardScreenState
     extends State<ProfessionalDashboardScreen> {
   int _selectedIndex = 0;
   bool _isLoadingData = true;
+  bool _isOnline = true;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
 
   @override
   void initState() {
     super.initState();
+    _initConnectivity();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
   }
 
@@ -39,6 +46,25 @@ class _ProfessionalDashboardScreenState
       context.read<PaymentProvider>().loadProfessionalPayments(userId),
     ]);
     if (mounted) setState(() => _isLoadingData = false);
+  }
+
+  Future<void> _initConnectivity() async {
+    final connected = await Helpers.checkInternetConnection();
+    if (mounted) {
+      setState(() => _isOnline = connected);
+    }
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((_) async {
+      final connected = await Helpers.checkInternetConnection();
+      if (mounted) {
+        setState(() => _isOnline = connected);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -125,15 +151,13 @@ class _ProfessionalDashboardScreenState
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: (user?.isOnline ?? false)
-                          ? AppColors.online
-                          : AppColors.offline,
+                      color: _isOnline ? AppColors.online : AppColors.offline,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    (user?.isOnline ?? false) ? 'Online' : 'Offline',
+                    _isOnline ? 'Online' : 'Offline',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -236,35 +260,7 @@ class _ProfessionalDashboardScreenState
   }
 
   Widget _buildStats(UserModel? user) {
-    final payments = context.watch<PaymentProvider>().payments;
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final startOfWeek = startOfDay.subtract(Duration(days: now.weekday - 1));
-    final startOfMonth = DateTime(now.year, now.month);
-
-    double sumSince(DateTime cutoff) => payments
-        .where((p) => (p.createdAt ?? now).isAfter(cutoff))
-        .fold(0.0, (sum, p) => sum + (p.amount ?? 0));
-
     final stats = [
-      {
-        'label': "Today's Earnings",
-        'value': _formatXaf(sumSince(startOfDay)),
-        'icon': Icons.today_rounded,
-        'color': AppColors.primary,
-      },
-      {
-        'label': 'Weekly Earnings',
-        'value': _formatXaf(sumSince(startOfWeek)),
-        'icon': Icons.date_range_rounded,
-        'color': AppColors.info,
-      },
-      {
-        'label': 'Monthly Earnings',
-        'value': _formatXaf(sumSince(startOfMonth)),
-        'icon': Icons.calendar_month_rounded,
-        'color': AppColors.warning,
-      },
       {
         'label': 'Rating',
         'value': user?.rating != null
@@ -392,15 +388,6 @@ class _ProfessionalDashboardScreenState
       const SizedBox(height: 12),
       Row(
         children: [
-          Expanded(
-            child: _buildActionCard(
-              'Availability',
-              Icons.toggle_on_rounded,
-              AppColors.info,
-              () => Navigator.pushNamed(context, AppRoutes.availability),
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: _buildActionCard(
               'Earnings',

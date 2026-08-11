@@ -83,7 +83,7 @@ class _HireWorkerScreenState extends State<HireWorkerScreen> {
       if (!mounted) return;
       setState(() {
         _worker = user;
-        _category = user?.category;
+        _category = user?.category ?? 'General';
         _loadingWorker = false;
       });
     } catch (_) {
@@ -277,7 +277,7 @@ Payment: $_paymentMethod
                           const SizedBox(height: 8),
                           _buildServiceChips(),
                           const SizedBox(height: 10),
-                          _buildCategoryField(),
+                          _buildCategoryInfo(),
                           const SizedBox(height: 20),
                           _sectionTitle('Describe your problem'),
                           const SizedBox(height: 8),
@@ -545,24 +545,35 @@ Payment: $_paymentMethod
     );
   }
 
-  Widget _buildCategoryField() {
-    final cats = LookupData.jobCategories;
-    return DropdownButtonFormField<String>(
-      value: cats.contains(_category) ? _category : null,
-      hint: const Text('Service category'),
-      items: cats
-          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-          .toList(),
-      onChanged: (v) => setState(() => _category = v),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor:
-            Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+  Widget _buildCategoryInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Service category',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
+          ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            _category?.trim().isNotEmpty == true ? _category! : 'General service',
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

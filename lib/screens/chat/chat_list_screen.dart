@@ -60,6 +60,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 }
 
                 final threads = snapshot.data!;
+
+                if (userId != null && threads.isNotEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    for (final thread in threads) {
+                      if (thread.id != null && thread.unreadCountFor(userId) > 0) {
+                        chatProvider.markAsDelivered(thread.id!, userId);
+                      }
+                    }
+                  });
+                }
+
                 final filteredThreads = threads.where((thread) {
                   final isUser1 = thread.user1Id == userId;
                   final otherName = (isUser1 ? thread.user2Name : thread.user1Name) ?? '';

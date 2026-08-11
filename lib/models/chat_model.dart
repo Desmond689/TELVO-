@@ -26,8 +26,8 @@ class ChatMessage {
       mediaUrl: map['mediaUrl'],
       timestamp: map['timestamp']?.toDate(),
       isRead: map['read'] ?? map['isRead'] ?? false,
-      isDelivered: map['isDelivered'] ?? false,
-      isSeen: map['isSeen'] ?? false,
+      isDelivered: map['isDelivered'] ?? map['delivered'] ?? false,
+      isSeen: map['isSeen'] ?? map['seen'] ?? false,
     );
   }
   final String? id;
@@ -51,6 +51,7 @@ class ChatMessage {
         'type': type,
         'mediaUrl': mediaUrl,
         'timestamp': timestamp ?? FieldValue.serverTimestamp(),
+        'read': isRead,
         'isRead': isRead,
         'isDelivered': isDelivered,
         'isSeen': isSeen,

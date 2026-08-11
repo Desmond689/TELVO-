@@ -1,6 +1,7 @@
 // lib/providers/job_provider.dart
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:telvo/models/job_model.dart';
@@ -36,6 +37,8 @@ class JobProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
+
   static bool shouldShowInFeed(JobModel job, {String? currentUserId}) {
     final status = job.status?.trim().toLowerCase();
     if (status != 'posted' &&
@@ -45,8 +48,11 @@ class JobProvider extends ChangeNotifier {
       return false;
     }
     if (currentUserId != null && job.customerId == currentUserId) return false;
+    final professionalId = (job.professionalId ?? '').trim();
+    if (professionalId.isNotEmpty && professionalId != currentUserId) {
+      return false;
+    }
     if ((job.acceptedQuoteId ?? '').isNotEmpty) return false;
-    if ((job.professionalId ?? '').isNotEmpty) return false;
     // Exclude expired jobs (older than 24 hours)
     try {
       final now = DateTime.now();
@@ -71,7 +77,7 @@ class JobProvider extends ChangeNotifier {
             for (final doc in snapshot.docs) {
               try {
                 final job = JobModel.fromMap({...doc.data(), 'id': doc.id});
-                final showInFeed = shouldShowInFeed(job);
+                final showInFeed = shouldShowInFeed(job, currentUserId: _currentUserId);
                 if (showInFeed) {
                   temp.add(job);
                 } else {
@@ -120,7 +126,7 @@ class JobProvider extends ChangeNotifier {
           .get();
       _jobs = snapshot.docs
           .map((doc) => JobModel.fromMap({...doc.data(), 'id': doc.id}))
-          .where((job) => shouldShowInFeed(job))
+          .where((job) => shouldShowInFeed(job, currentUserId: _currentUserId))
           .toList();
       _jobs.sort((a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)));
       _setError(null);
