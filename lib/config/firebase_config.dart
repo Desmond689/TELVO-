@@ -51,11 +51,20 @@ class FirebaseConfig {
     _firestore = FirebaseFirestore.instanceFor(app: app);
   }
 
-  static FirebaseAuth get auth => _auth!;
-  static FirebaseFirestore get firestore => _firestore!;
-  static FirebaseApp get app => _app!;
+  // Return initialized instances when available, otherwise fall back to
+  // the default Firebase instances. This makes the config resilient when
+  // parts of the app access Firebase before `FirebaseConfig.initialize()`
+  // has been explicitly called (e.g. during provider initialization).
+  static FirebaseAuth get auth => _auth ?? FirebaseAuth.instance;
+  static FirebaseFirestore get firestore => _firestore ?? FirebaseFirestore.instance;
+  static FirebaseApp? get app => _app;
 
   static Future<void> setPersistence() async {
-    await auth.setPersistence(Persistence.LOCAL);
+    final a = auth;
+    try {
+      await a.setPersistence(Persistence.LOCAL);
+    } catch (_) {
+      // Some platforms / versions may not support changing persistence; ignore.
+    }
   }
 }

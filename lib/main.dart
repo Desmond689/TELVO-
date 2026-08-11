@@ -19,6 +19,8 @@ import 'package:telvo/config/app_config.dart';
 import 'package:telvo/config/routes.dart';
 import 'package:flutter/services.dart';
 import 'package:telvo/services/notification_service.dart';
+import 'package:telvo/screens/dev/dev_config_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:telvo/services/app_update_service.dart';
 import 'package:telvo/services/foreground_notification_manager.dart';
 import 'package:telvo/services/app_navigator.dart';
@@ -115,23 +117,35 @@ void main() async {
       debugPrint('Note: .env file not found, will try environment variables: $e');
     }
 
-    // Read configuration values - check both .env and environment variables
-    // This allows CI systems to inject configuration without needing a .env file
-    final apiKey = (dotenv.env['FIREBASE_API_KEY'] ?? '').isNotEmpty
-        ? dotenv.env['FIREBASE_API_KEY']!
-        : (const String.fromEnvironment('FIREBASE_API_KEY'));
-    final appId = (dotenv.env['FIREBASE_APP_ID'] ?? '').isNotEmpty
-        ? dotenv.env['FIREBASE_APP_ID']!
-        : (const String.fromEnvironment('FIREBASE_APP_ID'));
-    final senderId = (dotenv.env['FIREBASE_SENDER_ID'] ?? '').isNotEmpty
-        ? dotenv.env['FIREBASE_SENDER_ID']!
-        : (const String.fromEnvironment('FIREBASE_SENDER_ID'));
-    final projectId = (dotenv.env['FIREBASE_PROJECT_ID'] ?? '').isNotEmpty
-        ? dotenv.env['FIREBASE_PROJECT_ID']!
-        : (const String.fromEnvironment('FIREBASE_PROJECT_ID'));
-    final authDomain = (dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '').isNotEmpty
-        ? dotenv.env['FIREBASE_AUTH_DOMAIN']!
-        : (const String.fromEnvironment('FIREBASE_AUTH_DOMAIN'));
+    // Read configuration values - check .env, compile-time defines, then
+    // SharedPreferences (dev override). This helps local debug builds where
+    // a .env file isn't bundled and CI uses secrets instead.
+    final fromDotenv = (String? key) => (dotenv.env[key] ?? '');
+    final fromDefine = (String key) => const String.fromEnvironment(key);
+
+    final apiKeyRaw = fromDotenv('FIREBASE_API_KEY').isNotEmpty
+      ? fromDotenv('FIREBASE_API_KEY')
+      : fromDefine('FIREBASE_API_KEY');
+    final appIdRaw = fromDotenv('FIREBASE_APP_ID').isNotEmpty
+      ? fromDotenv('FIREBASE_APP_ID')
+      : fromDefine('FIREBASE_APP_ID');
+    final senderIdRaw = fromDotenv('FIREBASE_SENDER_ID').isNotEmpty
+      ? fromDotenv('FIREBASE_SENDER_ID')
+      : fromDefine('FIREBASE_SENDER_ID');
+    final projectIdRaw = fromDotenv('FIREBASE_PROJECT_ID').isNotEmpty
+      ? fromDotenv('FIREBASE_PROJECT_ID')
+      : fromDefine('FIREBASE_PROJECT_ID');
+    final authDomainRaw = fromDotenv('FIREBASE_AUTH_DOMAIN').isNotEmpty
+      ? fromDotenv('FIREBASE_AUTH_DOMAIN')
+      : fromDefine('FIREBASE_AUTH_DOMAIN');
+
+    // Check for developer overrides stored in SharedPreferences (debug-only)
+    final sp = await SharedPreferences.getInstance();
+    final apiKey = sp.getString('DEV_FIREBASE_API_KEY') ?? apiKeyRaw;
+    final appId = sp.getString('DEV_FIREBASE_APP_ID') ?? appIdRaw;
+    final senderId = sp.getString('DEV_FIREBASE_SENDER_ID') ?? senderIdRaw;
+    final projectId = sp.getString('DEV_FIREBASE_PROJECT_ID') ?? projectIdRaw;
+    final authDomain = sp.getString('DEV_FIREBASE_AUTH_DOMAIN') ?? authDomainRaw;
 
     // Validate that required Firebase configuration is present
     final missingOrPlaceholder = <String>[
@@ -142,6 +156,13 @@ void main() async {
     ];
 
     if (missingOrPlaceholder.isNotEmpty) {
+      if (kDebugMode) {
+        // In debug, show a small interactive screen to enter keys instead of
+        // crashing. This helps local development when .env isn't present.
+        runApp(MaterialApp(home: _DevConfigScreen(missingOrPlaceholder)));
+        return;
+      }
+
       throw Exception(
         'Missing or placeholder Firebase configuration: '
         '${missingOrPlaceholder.join(', ')}.\n\n'
