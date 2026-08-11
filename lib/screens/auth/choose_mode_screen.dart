@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:telvo/providers/auth_provider.dart';
 import 'package:telvo/config/routes.dart';
 import 'package:telvo/widgets/custom_button.dart';
+import 'package:telvo/utils/app_colors.dart';
 
 class ChooseModeScreen extends StatefulWidget {
   const ChooseModeScreen({super.key});
@@ -74,30 +75,85 @@ class _ChooseModeScreenState extends State<ChooseModeScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Choose Your Mode'), elevation: 0),
-    body: Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'How will you use Telvo?',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Select how you want to interact with the platform',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          const SizedBox(height: 32),
-          ..._modes.map((mode) => _buildModeCard(mode)),
-          const Spacer(),
-          CustomButton(
-            text: _isLoading ? 'Saving...' : 'Continue',
-            onPressed: _isLoading ? null : _saveMode,
-          ),
-          const SizedBox(height: 16),
-        ],
+    appBar: AppBar(
+      title: const Text('Choose Your Mode'),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+    ),
+    body: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hero Image
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      'assets/images/Telvo app splash screen design (1).png',
+                      fit: BoxFit.cover,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.2),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            // Main Heading
+            Text(
+              'How will you use Telvo?',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Select how you want to interact with the platform',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 32),
+            // Mode Cards
+            ..._modes.map((mode) => _buildModeCard(mode)),
+            const SizedBox(height: 32),
+            CustomButton(
+              text: _isLoading ? 'Saving...' : 'Continue',
+              onPressed: _isLoading ? null : _saveMode,
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     ),
   );
@@ -111,15 +167,28 @@ class _ChooseModeScreenState extends State<ChooseModeScreen> {
         });
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? const Color(0xFF00C853) : Colors.grey.shade300,
-            width: 2,
+            color: isSelected 
+                ? AppColors.primary 
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            width: isSelected ? 2.5 : 1.5,
           ),
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected ? Colors.green.shade50 : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          color: isSelected 
+              ? AppColors.primaryBackground 
+              : Theme.of(context).colorScheme.surface,
+          boxShadow: isSelected 
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
@@ -127,13 +196,15 @@ class _ChooseModeScreenState extends State<ChooseModeScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF00C853)
-                    : Colors.grey.shade200,
+                    ? AppColors.primary
+                    : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 mode['icon'],
-                color: isSelected ? Colors.white : Colors.grey,
+                color: isSelected 
+                    ? Colors.white 
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 size: 28,
               ),
             ),
@@ -147,22 +218,30 @@ class _ChooseModeScreenState extends State<ChooseModeScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
                     mode['description'],
                     style: TextStyle(
-                      fontSize: 14,
-                      color: isSelected ? Colors.green.shade700 : Colors.grey,
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(
+                        alpha: isSelected ? 0.7 : 0.5,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle, color: Color(0xFF00C853)),
+              Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.primary,
+                size: 28,
+              ),
           ],
         ),
       ),

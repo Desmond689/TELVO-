@@ -107,23 +107,33 @@ void main() async {
   String? startupError;
 
   try {
-    // Load environment variables
-    await dotenv.load(fileName: ".env");
+    // Load environment variables from .env file if it exists
+    // In CI/production, these may come from environment variables instead
+    try {
+      await dotenv.load(fileName: ".env");
+    } catch (e) {
+      debugPrint('Note: .env file not found, will try environment variables: $e');
+    }
 
-    // Fail loudly, not silently, if the required config is missing or is
-    // still a placeholder from .env.example. A previous version of this
-    // file swallowed this failure with a bare debugPrint, which let the app
-    // boot into a UI that looked normal while every Firebase call
-    // underneath it was broken (jobs never loaded, chat/notifications never
-    // worked, "no internet" errors that had nothing to do with the
-    // network). If this happens now, show a real error screen instead of
-    // pretending everything is fine.
-    final apiKey = dotenv.env['FIREBASE_API_KEY'] ?? '';
-    final appId = dotenv.env['FIREBASE_APP_ID'] ?? '';
-    final senderId = dotenv.env['FIREBASE_SENDER_ID'] ?? '';
-    final projectId = dotenv.env['FIREBASE_PROJECT_ID'] ?? '';
-    final authDomain = dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '';
+    // Read configuration values - check both .env and environment variables
+    // This allows CI systems to inject configuration without needing a .env file
+    final apiKey = (dotenv.env['FIREBASE_API_KEY'] ?? '').isNotEmpty
+        ? dotenv.env['FIREBASE_API_KEY']!
+        : (const String.fromEnvironment('FIREBASE_API_KEY'));
+    final appId = (dotenv.env['FIREBASE_APP_ID'] ?? '').isNotEmpty
+        ? dotenv.env['FIREBASE_APP_ID']!
+        : (const String.fromEnvironment('FIREBASE_APP_ID'));
+    final senderId = (dotenv.env['FIREBASE_SENDER_ID'] ?? '').isNotEmpty
+        ? dotenv.env['FIREBASE_SENDER_ID']!
+        : (const String.fromEnvironment('FIREBASE_SENDER_ID'));
+    final projectId = (dotenv.env['FIREBASE_PROJECT_ID'] ?? '').isNotEmpty
+        ? dotenv.env['FIREBASE_PROJECT_ID']!
+        : (const String.fromEnvironment('FIREBASE_PROJECT_ID'));
+    final authDomain = (dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '').isNotEmpty
+        ? dotenv.env['FIREBASE_AUTH_DOMAIN']!
+        : (const String.fromEnvironment('FIREBASE_AUTH_DOMAIN'));
 
+    // Validate that required Firebase configuration is present
     final missingOrPlaceholder = <String>[
       if (apiKey.isEmpty || apiKey.startsWith('your_')) 'FIREBASE_API_KEY',
       if (appId.isEmpty || appId.startsWith('your_')) 'FIREBASE_APP_ID',
@@ -133,13 +143,18 @@ void main() async {
 
     if (missingOrPlaceholder.isNotEmpty) {
       throw Exception(
-        'Missing or placeholder Firebase configuration in .env: '
-        '${missingOrPlaceholder.join(', ')}. This build cannot connect to '
-        'Firebase. Check the CI secrets / .env used to build this app.',
+        'Missing or placeholder Firebase configuration: '
+        '${missingOrPlaceholder.join(', ')}.\n\n'
+        'This build cannot connect to Firebase.\n\n'
+        'To fix this:\n'
+        '1. Copy .env.example to .env\n'
+        '2. Fill in your Firebase credentials from https://console.firebase.google.com/\n'
+        '3. For CI/GitHub Actions, set these as repository secrets and pass them to the build process.\n\n'
+        'For more details, check your project\'s setup documentation.',
       );
     }
 
-    // Initialize Firebase
+    // Initialize Firebase with validated configuration
     await Firebase.initializeApp(
       options: FirebaseOptions(
         apiKey: apiKey,
@@ -150,8 +165,7 @@ void main() async {
       ),
     );
 
-    // Disable Firestore offline persistence so the app only shows live data
-    // when an internet connection is available.
+    // Enable Firestore offline persistence for better UX
     FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
 
     // Initialize notification service

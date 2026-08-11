@@ -9,6 +9,7 @@ import 'package:telvo/providers/auth_provider.dart';
 import 'package:telvo/services/storage_service.dart';
 import 'package:telvo/widgets/custom_button.dart';
 import 'package:telvo/utils/error_messages.dart';
+import 'package:telvo/utils/app_colors.dart';
 
 class IDVerificationScreen extends StatefulWidget {
   const IDVerificationScreen({super.key});
@@ -217,13 +218,20 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 12),
         Text(
           description,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
         ),
         const SizedBox(height: 24),
         CustomButton(
@@ -239,23 +247,30 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: Theme.of(context).colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade100),
+        border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Verification rejected',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             reason != null && reason.isNotEmpty
                 ? 'Reason: $reason'
                 : 'Your previous verification attempt was rejected. Please update your documents and submit again.',
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
           ),
         ],
       ),
@@ -282,11 +297,13 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
         children: [
           CircleAvatar(
             radius: 16,
-            backgroundColor: isComplete || isActive ? Colors.green : Colors.grey.shade300,
+            backgroundColor: isComplete || isActive 
+                ? AppColors.primary 
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
             child: Text(
               '${index + 1}',
               style: TextStyle(
-                color: isComplete || isActive ? Colors.white : Colors.black87,
+                color: isComplete || isActive ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -296,7 +313,7 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isActive ? Colors.black : Colors.black54,
+              color: isActive ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -309,7 +326,7 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
     return Container(
       width: 24,
       height: 2,
-      color: Colors.grey.shade300,
+      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
     );
   }
 
@@ -330,12 +347,21 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Select the ID type you will submit',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 12),
-        const Text('Choose the primary identity document to verify your account.'),
+        Text(
+          'Choose the primary identity document to verify your account.',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
         const SizedBox(height: 16),
         _buildIdTypeOption('National ID'),
         _buildIdTypeOption('Passport'),
@@ -361,12 +387,21 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Upload your identity document',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 12),
-        const Text('Capture a clear front photo of your document. The back side is optional but recommended.'),
+        Text(
+          'Capture a clear front photo of your document. The back side is optional but recommended.',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -383,12 +418,21 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Take a selfie',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 12),
-        const Text('Take a selfie while holding your ID next to your face. This helps verify your identity securely.'),
+        Text(
+          'Take a selfie while holding your ID next to your face. This helps verify your identity securely.',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
         const SizedBox(height: 16),
         _buildPhotoCard('Selfie with ID', _selfie, () => _pickImage(ImageSource.camera, 'selfie')),
       ],
@@ -403,15 +447,26 @@ class _IDVerificationScreenState extends State<IDVerificationScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Theme.of(context).colorScheme.outline),
-          color: Colors.grey.shade100,
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (file == null) ...[
-              const Icon(Icons.camera_alt, size: 36, color: Colors.grey),
+              Icon(
+                Icons.camera_alt,
+                size: 36,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
               const SizedBox(height: 12),
-              Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
             ] else ...[
               Expanded(child: Image.file(File(file.path), fit: BoxFit.cover, width: double.infinity)),
             ],

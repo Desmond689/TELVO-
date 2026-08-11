@@ -138,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             _buildHeader(user),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
             const CustomSearchBar(),
             const SizedBox(height: 16),
             Expanded(
@@ -146,12 +146,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 controller: _scrollController,
                 padding: EdgeInsets.zero,
                 children: [
+                  _buildHeroSection(),
+                  const SizedBox(height: 28),
                   _buildCategories(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   _buildNeedHelpFast(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   _buildActionButtons(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   _buildWorkerFeed(),
                   const SizedBox(height: 24),
                 ],
@@ -279,6 +281,76 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 
   Widget _buildNeedHelpFast() => const NeedHelpFastButton();
+
+  Widget _buildHeroSection() => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Hero Image
+        Container(
+          height: 200,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/images/Telvo app splash screen design (1).png',
+                  fit: BoxFit.cover,
+                ),
+                // Gradient overlay for better text contrast
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.3),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Heading Text
+        Text(
+          'Find Professionals Near You',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Poppins',
+            letterSpacing: -0.5,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Connect with trusted professionals in your area',
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Poppins',
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    ),
+  );
 
   /// Two distinct primary actions:
   /// - Post Job: create a request and receive quotes from professionals.
