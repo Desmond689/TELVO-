@@ -121,7 +121,7 @@ void main() async {
     // SharedPreferences (dev override). This helps local debug builds where
     // a .env file isn't bundled and CI uses secrets instead.
     final fromDotenv = (String? key) => (dotenv.env[key] ?? '');
-    final fromDefine = (String key) => const String.fromEnvironment(key);
+    final fromDefine = (String key) => String.fromEnvironment(key);
 
     final apiKeyRaw = fromDotenv('FIREBASE_API_KEY').isNotEmpty
       ? fromDotenv('FIREBASE_API_KEY')
@@ -159,7 +159,7 @@ void main() async {
       if (kDebugMode) {
         // In debug, show a small interactive screen to enter keys instead of
         // crashing. This helps local development when .env isn't present.
-        runApp(MaterialApp(home: _DevConfigScreen(missingOrPlaceholder)));
+        runApp(MaterialApp(home: DevConfigScreen(missingOrPlaceholder)));
         return;
       }
 

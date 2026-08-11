@@ -2,15 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _DevConfigScreen extends StatefulWidget {
+class DevConfigScreen extends StatefulWidget {
   final List<String> missingKeys;
-  const _DevConfigScreen(this.missingKeys, {Key? key}) : super(key: key);
+  const DevConfigScreen(this.missingKeys, {Key? key}) : super(key: key);
 
   @override
-  State<_DevConfigScreen> createState() => _DevConfigScreenState();
+  State<DevConfigScreen> createState() => _DevConfigScreenState();
 }
 
-class _DevConfigScreenState extends State<_DevConfigScreen> {
+class _DevConfigScreenState extends State<DevConfigScreen> {
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _controllers = {};
   bool _saving = false;
