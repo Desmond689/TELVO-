@@ -26,7 +26,7 @@ class _ProfessionalDashboardScreenState
   int _selectedIndex = 0;
   bool _isLoadingData = true;
   bool _isOnline = true;
-  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   @override
   void initState() {
