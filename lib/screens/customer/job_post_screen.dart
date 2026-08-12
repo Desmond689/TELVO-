@@ -494,7 +494,6 @@ class _JobPostScreenState extends State<JobPostScreen> {
       // Create or update the job object.
       var job = JobModel(
         id: _existingJob?.id,
-        id: _existingJob?.id,
         customerId: customerId,
         professionalId: _selectedProfessionalId,
         businessId: _selectedBusinessId,

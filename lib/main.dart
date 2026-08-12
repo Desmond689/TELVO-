@@ -367,7 +367,7 @@ class _MyAppState extends State<MyApp> {
                   AppRoutes.professionalProfile: (context) =>
                       const ProfessionalProfileScreen(),
                   AppRoutes.jobPost: (context) => const JobPostScreen(),
-                  AppRoutes.suspended: (context) => const SuspendedScreen(),
+                  AppRoutes.suspended: (context) => SuspendedScreen(),
                   AppRoutes.jobTracking: (context) => const JobTrackingScreen(),
                   AppRoutes.jobDetails: (context) => const JobDetailsScreen(),
                   AppRoutes.payment: (context) => const PaymentScreen(),
