@@ -320,6 +320,19 @@ class _ProfessionalProfileScreenState extends State<ProfessionalProfileScreen> {
                           style: const TextStyle(color: Colors.red, fontSize: 13),
                         ),
                       ),
+                    if (!isBlocked)
+                      CustomButton(
+                        text: 'Request Service',
+                        isOutlined: true,
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.jobPost,
+                            arguments: professional.id,
+                          );
+                        },
+                      ),
+                    if (!isBlocked) const SizedBox(height: 16),
                     CustomButton(
                       text: 'Hire Now',
                       onPressed: isBlocked

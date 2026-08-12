@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:telvo/config/routes.dart';
 import 'package:telvo/models/user_model.dart';
+import 'package:telvo/services/app_navigator.dart';
 import 'package:telvo/services/notification_service.dart';
 import 'package:telvo/services/storage_service.dart';
 import 'package:telvo/utils/error_messages.dart';
@@ -107,7 +109,12 @@ class AuthProvider extends ChangeNotifier {
       if (!hasInternet) {
         final cachedDoc = await _firestore.collection('users').doc(userId).get(GetOptions(source: Source.cache));
         if (cachedDoc.exists) {
-          _currentUser = UserModel.fromMap(cachedDoc.data()!);
+          final cachedData = cachedDoc.data()!;
+          if (cachedData['isSuspended'] == true || cachedData['isBanned'] == true) {
+            await _signOutSuspendedUser('Your account has been suspended. Contact support for help.');
+            return;
+          }
+          _currentUser = UserModel.fromMap(cachedData);
         }
         _setError('No internet connection. Please check your connection and try again.');
       } else {
@@ -116,12 +123,7 @@ class AuthProvider extends ChangeNotifier {
             final data = doc.data()!;
             // If the account has been suspended by an admin, immediately sign out
             if (data['isSuspended'] == true || data['isBanned'] == true) {
-              // Ensure any local session is cleared
-              await _auth.signOut();
-              await _secureStorage.delete(key: 'userId');
-              _currentUser = null;
-              _setError('Your account has been suspended. Contact support for help.');
-              notifyListeners();
+              await _signOutSuspendedUser('Your account has been suspended. Contact support for help.');
               return;
             }
 
@@ -161,6 +163,27 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  Future<void> _signOutSuspendedUser(String message) async {
+    _setError(message);
+    try {
+      await _auth.signOut();
+    } catch (_) {}
+    try {
+      await _secureStorage.delete(key: 'userId');
+    } catch (_) {}
+    _currentUser = null;
+    notifyListeners();
+    _navigateToSuspendedScreen();
+  }
+
+  void _navigateToSuspendedScreen() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final nav = navigatorKey.currentState;
+      if (nav == null) return;
+      nav.pushNamedAndRemoveUntil(AppRoutes.suspended, (route) => false);
+    });
   }
 
   /// Creates a real account: Firebase Auth stores and hashes the password

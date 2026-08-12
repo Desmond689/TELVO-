@@ -133,8 +133,12 @@ export function Messages() {
                 onClick={() => setActiveChatId(t.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-ink-100 hover:bg-ink-50 ${activeChatId === t.id ? 'bg-brand-50' : ''}`}
               >
-                <span className="w-11 h-11 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  {other?.fullName?.[0] || '?'}
+                <span className="w-11 h-11 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {other?.profilePhoto ? (
+                    <img src={other.profilePhoto} alt={other.fullName || 'User'} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-bold">{other?.fullName?.[0] || '?'}</span>
+                  )}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">

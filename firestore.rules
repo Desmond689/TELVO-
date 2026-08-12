@@ -24,8 +24,30 @@ service cloud.firestore {
     }
 
     function isChatParticipant(chatId) {
-      return isSignedIn() &&
+      return canUseApp() &&
         request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+    }
+
+    function getUserDoc(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function isActiveUser() {
+      return isSignedIn() &&
+        getUserDoc(request.auth.uid).exists() &&
+        getUserDoc(request.auth.uid).data.isSuspended != true &&
+        getUserDoc(request.auth.uid).data.isBanned != true;
+    }
+
+    function isActiveAdmin() {
+      return isAdmin() &&
+        getUserDoc(request.auth.uid).exists() &&
+        getUserDoc(request.auth.uid).data.isSuspended != true &&
+        getUserDoc(request.auth.uid).data.isBanned != true;
+    }
+
+    function canUseApp() {
+      return isActiveUser() || isActiveAdmin();
     }
 
     // Server-side mirror of the client-side block checks in chat_provider.dart
@@ -45,7 +67,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && (isOwner(userId) || canUseApp());
       allow create: if isOwner(userId) &&
         request.resource.data.id == userId &&
         request.resource.data.userType in ['customer', 'professional', 'both'];
@@ -58,29 +80,29 @@ service cloud.firestore {
     }
 
     match /jobs/{jobId} {
-      allow read: if isSignedIn() && (
+      allow read: if canUseApp() && (
         isAdmin() ||
         !isCompletedJob(resource.data) ||
         resource.data.customerId == request.auth.uid ||
         resource.data.professionalId == request.auth.uid
       );
-      allow create: if isSignedIn() &&
+      allow create: if canUseApp() &&
         request.resource.data.customerId == request.auth.uid &&
         request.resource.data.status in ['posted', 'open'];
-      allow update: if isSignedIn() && (
+      allow update: if canUseApp() && (
         isAdmin() ||
         resource.data.customerId == request.auth.uid ||
         resource.data.professionalId == request.auth.uid ||
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quotes', 'status']) &&
           isOpenJobStatus(resource.data.status))
       );
-      allow delete: if isSignedIn() &&
+      allow delete: if canUseApp() &&
         (resource.data.customerId == request.auth.uid || isAdmin());
     }
 
     match /quotes/{quoteId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() &&
+      allow read: if canUseApp();
+      allow create: if canUseApp() &&
         request.resource.data.professionalId == request.auth.uid &&
         request.resource.data.jobId is string &&
         request.resource.data.price is number &&
@@ -88,7 +110,7 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/jobs/$(request.resource.data.jobId)) &&
         get(/databases/$(database)/documents/jobs/$(request.resource.data.jobId)).data.customerId != request.auth.uid &&
         get(/databases/$(database)/documents/jobs/$(request.resource.data.jobId)).data.status in ['posted', 'open', 'quotes_received', 'notified'];
-      allow update: if isSignedIn() && (
+      allow update: if canUseApp() && (
         isAdmin() ||
         (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) &&
@@ -103,15 +125,15 @@ service cloud.firestore {
     }
 
     match /hire_requests/{hireId} {
-      allow read: if isSignedIn() && (
+      allow read: if canUseApp() && (
         resource.data.customerId == request.auth.uid ||
         resource.data.professionalId == request.auth.uid ||
         isAdmin()
       );
-      allow create: if isSignedIn() &&
+      allow create: if canUseApp() &&
         request.resource.data.customerId == request.auth.uid &&
         !isBlockedPair(request.resource.data.customerId, request.resource.data.professionalId);
-      allow update: if isSignedIn() && (
+      allow update: if canUseApp() && (
         resource.data.customerId == request.auth.uid ||
         resource.data.professionalId == request.auth.uid ||
         isAdmin()
@@ -120,8 +142,8 @@ service cloud.firestore {
     }
 
     match /reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isSignedIn() &&
+      allow read: if canUseApp() || isAdmin();
+      allow create: if isActiveUser() &&
         request.resource.data.reviewerId == request.auth.uid &&
         request.resource.data.reviewedId != request.auth.uid &&
         request.resource.data.jobId is string &&
@@ -137,19 +159,19 @@ service cloud.firestore {
     }
 
     match /chats/{chatId} {
-      allow read, update: if isSignedIn() &&
+      allow read, update: if canUseApp() &&
         request.auth.uid in resource.data.participantIds;
-      allow create: if isSignedIn() &&
+      allow create: if canUseApp() &&
         request.auth.uid in request.resource.data.participantIds &&
         !isBlockedPair(request.resource.data.user1Id, request.resource.data.user2Id);
       allow delete: if isAdmin();
 
       match /messages/{messageId} {
-        allow read: if isChatParticipant(chatId);
-        allow create: if isChatParticipant(chatId) &&
+        allow read: if canUseApp() && isChatParticipant(chatId);
+        allow create: if canUseApp() && isChatParticipant(chatId) &&
           request.resource.data.senderId == request.auth.uid &&
           !isBlockedPair(request.resource.data.senderId, request.resource.data.receiverId);
-        allow update: if isChatParticipant(chatId) && (
+        allow update: if canUseApp() && isChatParticipant(chatId) && (
           resource.data.senderId == request.auth.uid ||
           resource.data.receiverId == request.auth.uid
         );
@@ -158,14 +180,14 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow read: if isSignedIn() && (
+      allow read: if canUseApp() && (
         resource.data.senderId == request.auth.uid ||
         resource.data.receiverId == request.auth.uid
       );
-      allow create: if isSignedIn() &&
+      allow create: if canUseApp() &&
         request.resource.data.senderId == request.auth.uid &&
         !isBlockedPair(request.resource.data.senderId, request.resource.data.receiverId);
-      allow update: if isSignedIn() && (
+      allow update: if canUseApp() && (
         resource.data.senderId == request.auth.uid ||
         resource.data.receiverId == request.auth.uid
       );
@@ -173,14 +195,14 @@ service cloud.firestore {
     }
 
     match /payments/{paymentId} {
-      allow read: if isSignedIn() && (
+      allow read: if canUseApp() && (
         resource.data.customerId == request.auth.uid ||
         resource.data.professionalId == request.auth.uid ||
         isAdmin()
       );
-      allow create: if isSignedIn() &&
+      allow create: if canUseApp() &&
         request.resource.data.customerId == request.auth.uid;
-      allow update: if isSignedIn() && (
+      allow update: if canUseApp() && (
         resource.data.customerId == request.auth.uid ||
         resource.data.professionalId == request.auth.uid ||
         isAdmin()
@@ -191,43 +213,6 @@ service cloud.firestore {
     match /wallets/{walletId} {
       allow read: if isOwner(walletId) || isAdmin();
       allow write: if false;
-    }
-
-    match /notifications/{notificationId} {
-      allow read, update, delete: if isSignedIn() &&
-        resource.data.userId == request.auth.uid;
-
-      // Allow creation of notifications either by the recipient themselves
-      // (client-created local notifications) or by a different signed-in
-      // caller when that caller is the sender (fromUserId) and the
-      // notification type is an allowed cross-user type. Also block writes
-      // when the pair is blocked.
-      allow create: if isSignedIn() &&
-        (
-          // Users can create notifications for themselves
-          request.resource.data.userId == request.auth.uid
-        ||
-          // Or callers can create cross-user notifications that they originate
-          (
-            request.resource.data.fromUserId == request.auth.uid &&
-            request.resource.data.userId is string &&
-            request.resource.data.type in ['new_job','new_quote','quote_accepted','job_update','hire_request','hire_accepted','hire_rejected','job_completed','new_review'] &&
-            !isBlockedPair(request.resource.data.fromUserId, request.resource.data.userId)
-          )
-        ) &&
-        request.resource.data.keys().hasAll(['userId', 'title', 'body']) &&
-        request.resource.data.keys().hasOnly(['userId', 'title', 'body', 'type', 'isRead', 'createdAt', 'pushSent', 'data', 'fromUserId']) &&
-        request.resource.data.title is string &&
-        request.resource.data.body is string;
-    }
-
-    match /reports/{reportId} {
-      allow read: if isSignedIn() && (
-        resource.data.reportedBy == request.auth.uid || isAdmin()
-      );
-      allow create: if isSignedIn() &&
-        request.resource.data.reportedBy == request.auth.uid;
-      allow update, delete: if isAdmin();
     }
 
     match /categories/{categoryId} {
@@ -255,12 +240,42 @@ service cloud.firestore {
     }
 
     match /verifications/{verificationId} {
-      allow read, create, update: if isSignedIn() && (
+      allow read, create, update: if canUseApp() && (
         request.resource.data.userId == request.auth.uid ||
         resource.data.userId == request.auth.uid ||
         isAdmin()
       );
       allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read, update, delete: if canUseApp() &&
+        resource.data.userId == request.auth.uid;
+
+      allow create: if canUseApp() &&
+        (
+          request.resource.data.userId == request.auth.uid
+        ||
+          (
+            request.resource.data.fromUserId == request.auth.uid &&
+            request.resource.data.userId is string &&
+            request.resource.data.type in ['new_job','new_quote','quote_accepted','job_update','hire_request','hire_accepted','hire_rejected','job_completed','new_review'] &&
+            !isBlockedPair(request.resource.data.fromUserId, request.resource.data.userId)
+          )
+        ) &&
+        request.resource.data.keys().hasAll(['userId', 'title', 'body']) &&
+        request.resource.data.keys().hasOnly(['userId', 'title', 'body', 'type', 'isRead', 'createdAt', 'pushSent', 'data', 'fromUserId']) &&
+        request.resource.data.title is string &&
+        request.resource.data.body is string;
+    }
+
+    match /reports/{reportId} {
+      allow read: if canUseApp() && (
+        resource.data.reportedBy == request.auth.uid || isAdmin()
+      );
+      allow create: if canUseApp() &&
+        request.resource.data.reportedBy == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
 
     match /{document=**} {

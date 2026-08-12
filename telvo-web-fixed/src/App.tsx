@@ -22,6 +22,7 @@ import { Safety } from './pages/public/Safety';
 import { CommunityGuidelines } from './pages/public/CommunityGuidelines';
 import { Donate } from './pages/public/Donate';
 import { Download } from './pages/public/Download';
+import { Suspended } from './pages/public/Suspended';
 import { NotFound } from './pages/public/NotFound';
 
 import { Login } from './pages/auth/Login';
@@ -144,6 +145,7 @@ export default function App() {
         <Route path="/login/phone" element={<PhoneLogin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/suspended" element={<Suspended />} />
 
         {/* Customer dashboard */}
         <Route element={<ProtectedRoute allow={['customer']} />}>

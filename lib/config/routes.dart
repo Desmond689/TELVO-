@@ -16,6 +16,7 @@ import 'package:telvo/screens/customer/payment_screen.dart';
 import 'package:telvo/screens/customer/professional_profile_screen.dart';
 import 'package:telvo/screens/customer/review_screen.dart';
 import 'package:telvo/screens/customer/search_screen.dart';
+import 'package:telvo/screens/suspended_screen.dart';
 import 'package:telvo/screens/emergency/emergency_screen.dart';
 import 'package:telvo/screens/customer/favorites_screen.dart';
 import 'package:telvo/screens/customer/history_screen.dart';
@@ -53,6 +54,7 @@ class AppRoutes {
   static const String jobPost = '/job-post';
   static const String hireWorker = '/hire-worker';
   static const String jobTracking = '/job-tracking';
+  static const String suspended = '/suspended';
   static const String jobDetails = '/job-details';
   static const String payment = '/payment';
   static const String review = '/review';
@@ -125,6 +127,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const JobPostScreen());
       case jobTracking:
         return MaterialPageRoute(builder: (_) => const JobTrackingScreen());
+      case suspended:
+        return MaterialPageRoute(builder: (_) => const SuspendedScreen());
       case payment:
         return MaterialPageRoute(builder: (_) => const PaymentScreen());
       case review:

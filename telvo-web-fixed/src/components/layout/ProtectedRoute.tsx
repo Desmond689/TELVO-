@@ -19,6 +19,10 @@ export function ProtectedRoute({ allow }: { allow?: UserType[] }) {
 
   if (!profile) return <PageSpinner />;
 
+  if (profile.isSuspended) {
+    return <Navigate to="/suspended" replace />;
+  }
+
   if (allow && !allow.includes(profile.userType)) {
     return <Navigate to="/" replace />;
   }

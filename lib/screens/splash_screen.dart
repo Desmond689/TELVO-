@@ -34,7 +34,10 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (mounted) {
-      if (authProvider.isAuthenticated) {
+      final suspendedError = authProvider.error?.toLowerCase() ?? '';
+      if (!authProvider.isAuthenticated && suspendedError.contains('suspended')) {
+        Navigator.pushReplacementNamed(context, AppRoutes.suspended);
+      } else if (authProvider.isAuthenticated) {
         final user = authProvider.currentUser;
         if (user?.fullName == null || user?.fullName?.isEmpty == true) {
           Navigator.pushReplacementNamed(context, AppRoutes.profileSetup);

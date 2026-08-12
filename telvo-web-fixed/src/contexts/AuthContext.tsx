@@ -14,6 +14,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -102,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<TelvoUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -131,6 +133,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     return unsub;
   }, [firebaseUser]);
+
+  useEffect(() => {
+    if (profile?.isSuspended) {
+      setError('Your account has been suspended. Contact support for help.');
+      navigate('/suspended', { replace: true });
+    }
+  }, [profile, navigate]);
 
   const clearError = useCallback(() => setError(null), []);
 
