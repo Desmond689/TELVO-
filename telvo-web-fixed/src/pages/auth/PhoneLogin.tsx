@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import type { ConfirmationResult } from 'firebase/auth';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -8,15 +8,27 @@ import { Input } from '@/components/ui/Input';
 import { Logo } from '@/components/layout/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 
+type LocationState = {
+  from?: {
+    pathname?: string;
+    search?: string;
+    hash?: string;
+  };
+};
+
 const RECAPTCHA_ID = 'telvo-recaptcha-container';
 
 export function PhoneLogin() {
   const { startPhoneSignIn, confirmPhoneOtp, error, clearError, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const from = (location.state as LocationState)?.from;
+  const fromPath = from ? `${from.pathname ?? '/'}${from.search ?? ''}${from.hash ?? ''}` : null;
   const sentOnce = useRef(false);
 
   const sendOtp = async (e: FormEvent) => {
@@ -41,7 +53,8 @@ export function PhoneLogin() {
     setLoading(true);
     try {
       await confirmPhoneOtp(confirmation, otp);
-      navigate(profile ? '/' : '/register/complete-profile');
+      const destination = fromPath ?? (profile ? '/' : '/register/complete-profile');
+      navigate(destination, { replace: true });
     } catch {
       // surfaced via context
     } finally {
@@ -84,7 +97,7 @@ export function PhoneLogin() {
         )}
 
         <p className="text-sm text-ink-500 text-center mt-6">
-          Prefer email? <Link to="/login" className="text-brand-600 font-semibold hover:underline">Log in with email</Link>
+          Prefer email? <Link to="/login" state={{ from }} className="text-brand-600 font-semibold hover:underline">Log in with email</Link>
         </p>
       </Card>
     </div>

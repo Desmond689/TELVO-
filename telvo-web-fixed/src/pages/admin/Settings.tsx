@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
+import { ImageUploader } from '@/components/ui/ImageUploader';
+import { useAuth } from '@/contexts/AuthContext';
 import { getSupportSettings, saveSupportSettings, getPlatformSettings, savePlatformSettings } from '@/services/settingsService';
 
 export function AdminSettings() {
@@ -20,6 +22,10 @@ export function AdminSettings() {
   const [commissionPct, setCommissionPct] = useState('10');
   const [platformBusy, setPlatformBusy] = useState(false);
   const [platformSaved, setPlatformSaved] = useState(false);
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoSaved, setPhotoSaved] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const { profile, updateProfile } = useAuth();
 
   useEffect(() => {
     getSupportSettings()
@@ -68,12 +74,43 @@ export function AdminSettings() {
     }
   };
 
+  const handlePhotoUploaded = async (url: string) => {
+    if (!profile) return;
+    setPhotoError('');
+    setPhotoSaved(false);
+    setPhotoSaving(true);
+    try {
+      await updateProfile({ profilePhoto: url || '' });
+      setPhotoSaved(true);
+    } catch {
+      setPhotoError('Could not save your profile photo. Please try again.');
+    } finally {
+      setPhotoSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink-900">Settings</h1>
         <p className="text-sm text-ink-500 mt-1">Platform-wide settings shown to users on the website.</p>
       </div>
+
+      <Card className="p-6">
+        <h2 className="font-semibold text-ink-900 mb-1">Admin profile photo</h2>
+        <p className="text-sm text-ink-500 mb-4">Upload or change the photo shown on your admin account and navigation bar.</p>
+        <ImageUploader
+          path={`avatars/${profile?.id ?? 'admin'}`}
+          value={profile?.profilePhoto}
+          onUploaded={handlePhotoUploaded}
+          onError={(message) => setPhotoError(message)}
+          variant="avatar"
+          size={120}
+          disabled={photoSaving}
+        />
+        {photoError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mt-3">{photoError}</p>}
+        {photoSaved && <p className="text-sm text-brand-700 bg-brand-50 rounded-lg px-3 py-2 mt-3">Admin profile photo updated.</p>}
+      </Card>
 
       <Card className="p-6">
         <h2 className="font-semibold text-ink-900 mb-1">Platform commission</h2>

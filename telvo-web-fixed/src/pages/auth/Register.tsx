@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Wrench, User, Building2, Phone, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -22,9 +22,18 @@ const roles: { type: UserType; title: string; desc: string; icon: any }[] = [
   { type: 'business', title: 'I represent a business', desc: 'Manage a team and receive job requests', icon: Building2 },
 ];
 
+type LocationState = {
+  from?: {
+    pathname?: string;
+    search?: string;
+    hash?: string;
+  };
+};
+
 export function Register() {
   const { signUpWithEmail, error, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState<'role' | 'categories' | 'details'>('role');
   const [userType, setUserType] = useState<UserType | null>(null);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
@@ -47,6 +56,9 @@ export function Register() {
     setSelectedCategories((prev) => (prev.includes(slug) ? prev.filter((c) => c !== slug) : [...prev, slug]));
   };
 
+  const from = (location.state as LocationState)?.from;
+  const fromPath = from ? `${from.pathname ?? '/'}${from.search ?? ''}${from.hash ?? ''}` : null;
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!userType) return;
@@ -60,7 +72,11 @@ export function Register() {
           category: selectedCategories[0],
         });
       }
-      navigate(userType === 'professional' ? '/dashboard/professional/onboarding' : dashboardHomeFor(userType));
+      if (fromPath) {
+        navigate(fromPath, { replace: true });
+      } else {
+        navigate(userType === 'professional' ? '/dashboard/professional/onboarding' : dashboardHomeFor(userType));
+      }
     } catch {
       // surfaced via context
     } finally {
@@ -143,7 +159,7 @@ export function Register() {
         )}
 
         <p className="text-sm text-ink-500 text-center mt-6">
-          Already have an account? <Link to="/login" className="text-brand-600 font-semibold hover:underline">Log in</Link>
+          Already have an account? <Link to="/login" state={{ from }} className="text-brand-600 font-semibold hover:underline">Log in</Link>
         </p>
       </Card>
     </div>

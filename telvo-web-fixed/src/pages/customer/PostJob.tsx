@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Camera, X } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -11,8 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createJobRequest } from '@/services/jobService';
 import { uploadImage } from '@/services/storageService';
 import { getCategories } from '@/services/categoryService';
-import { useEffect } from 'react';
-import type { JobUrgency, ServiceCategory } from '@/types';
+import { getUserById } from '@/services/userService';
+import type { JobUrgency, ServiceCategory, TelvoUser } from '@/types';
 
 export function PostJob() {
   const { profile } = useAuth();
@@ -30,6 +30,8 @@ export function PostJob() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string | null>(null);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
+  const [selectedProfessional, setSelectedProfessional] = useState<TelvoUser | null>(null);
+  const [selectedBusiness, setSelectedBusiness] = useState<TelvoUser | null>(null);
   const [isQuoteRequest, setIsQuoteRequest] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -46,6 +48,32 @@ export function PostJob() {
     setSelectedBusinessId(businessId || null);
     setIsQuoteRequest(params.get('quote') === '1');
   }, [params]);
+
+  useEffect(() => {
+    if (!selectedProfessionalId) {
+      setSelectedProfessional(null);
+      return;
+    }
+    getUserById(selectedProfessionalId).then((user) => {
+      setSelectedProfessional(user);
+      if (user?.category && !category) {
+        setCategory(user.category);
+      }
+    });
+  }, [selectedProfessionalId, category]);
+
+  useEffect(() => {
+    if (!selectedBusinessId) {
+      setSelectedBusiness(null);
+      return;
+    }
+    getUserById(selectedBusinessId).then((user) => {
+      setSelectedBusiness(user);
+      if (user?.businessCategory && !category) {
+        setCategory(user.businessCategory);
+      }
+    });
+  }, [selectedBusinessId, category]);
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
@@ -101,12 +129,14 @@ export function PostJob() {
         <Card className="p-6 space-y-5">
           {(selectedProfessionalId || selectedBusinessId) && (
             <div className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700">
-              {selectedProfessionalId && (
-                <p>Request will be sent to the selected professional.</p>
+              {selectedProfessional && (
+                <p>Request will be sent to {selectedProfessional.fullName}.</p>
               )}
-              {selectedBusinessId && (
-                <p>Request will be sent to the selected business.</p>
+              {selectedBusiness && (
+                <p>Request will be sent to {selectedBusiness.businessName || selectedBusiness.fullName}.</p>
               )}
+              {!selectedProfessional && selectedProfessionalId && <p>Request will be sent to the selected professional.</p>}
+              {!selectedBusiness && selectedBusinessId && <p>Request will be sent to the selected business.</p>}
               {isQuoteRequest && <p>This is a quote request. Professionals will be notified accordingly.</p>}
             </div>
           )}

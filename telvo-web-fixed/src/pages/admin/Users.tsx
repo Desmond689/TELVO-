@@ -50,7 +50,7 @@ export function AdminUsers() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-ink-100 text-left text-ink-500">
-              <th className="p-4 font-medium">Name</th>
+              <th className="p-4 font-medium">User</th>
               <th className="p-4 font-medium">Type</th>
               <th className="p-4 font-medium">Contact</th>
               <th className="p-4 font-medium">Status</th>
@@ -61,7 +61,21 @@ export function AdminUsers() {
             {users === null && <tr><td className="p-4 text-ink-400" colSpan={5}>Loading...</td></tr>}
             {filtered?.map((u) => (
               <tr key={u.id} className="border-b border-ink-100 last:border-0">
-                <td className="p-4 font-medium text-ink-900">{u.fullName}</td>
+                <td className="p-4 font-medium text-ink-900">
+                  <div className="flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-full overflow-hidden bg-ink-100 flex items-center justify-center text-sm text-ink-500">
+                      {u.profilePhoto || u.businessLogo ? (
+                        <img src={u.profilePhoto || u.businessLogo} alt={u.fullName || u.businessName} className="w-full h-full object-cover" />
+                      ) : (
+                        (u.businessName || u.fullName)?.[0] || '?'
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{u.fullName || u.businessName}</div>
+                      <div className="truncate text-xs text-ink-500">{u.email || u.phoneNumber}</div>
+                    </div>
+                  </div>
+                </td>
                 <td className="p-4"><Badge>{u.userType}</Badge></td>
                 <td className="p-4 text-ink-500">{u.email || u.phoneNumber}</td>
                 <td className="p-4">

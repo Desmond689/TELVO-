@@ -8,6 +8,14 @@ import { Input } from '@/components/ui/Input';
 import { Logo } from '@/components/layout/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 
+type LocationState = {
+  from?: {
+    pathname?: string;
+    search?: string;
+    hash?: string;
+  };
+};
+
 export function Login() {
   const { signInWithEmail, error, clearError } = useAuth();
   const navigate = useNavigate();
@@ -16,7 +24,8 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/';
+  const from = (location.state as LocationState)?.from;
+  const fromPath = from ? `${from.pathname ?? '/'}${from.search ?? ''}${from.hash ?? ''}` : '/';
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,7 +33,7 @@ export function Login() {
     setLoading(true);
     try {
       await signInWithEmail(email.trim(), password);
-      navigate(from, { replace: true });
+      navigate(fromPath, { replace: true });
     } catch {
       // error surfaced via context
     } finally {
@@ -46,6 +55,7 @@ export function Login() {
 
         <Link
           to="/login/phone"
+          state={{ from }}
           className="mt-6 flex items-center justify-center gap-2 w-full h-11 rounded-xl border border-ink-200 text-sm font-medium text-ink-700 hover:border-brand-500 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           <Phone size={16} aria-hidden="true" /> Continue with phone number
@@ -95,7 +105,7 @@ export function Login() {
 
         <p className="text-sm text-ink-500 text-center mt-6">
           Don&apos;t have an account?{' '}
-          <Link to="/register" className="text-brand-600 font-semibold hover:underline">
+          <Link to="/register" state={{ from }} className="text-brand-600 font-semibold hover:underline">
             Sign up
           </Link>
         </p>
