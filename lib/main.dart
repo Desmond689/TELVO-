@@ -43,6 +43,7 @@ import 'package:telvo/screens/customer/review_screen.dart';
 import 'package:telvo/screens/customer/favorites_screen.dart';
 import 'package:telvo/screens/customer/history_screen.dart';
 import 'package:telvo/screens/chat/chat_list_screen.dart';
+import 'package:telvo/screens/suspended_screen.dart';
 import 'package:telvo/screens/chat/chat_screen.dart';
 import 'package:telvo/screens/notifications/notifications_screen.dart';
 import 'package:telvo/screens/settings/settings_screen.dart';

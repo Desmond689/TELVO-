@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
 Disallow: /dashboard/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /suspended
 
-Sitemap: https://telvo.com/sitemap.xml
+Sitemap: https://telvo-mu.vercel.app/sitemap.xml
