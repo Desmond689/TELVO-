@@ -39,23 +39,33 @@ function createBaseConstraints(filters: SearchFilters) {
 function createUserTypeConstraints(userType: string) {
   if (userType === 'professional') {
     return [
+      [where('userType', 'in', PROFESSIONAL_USER_TYPES), where('mode', '==', 'professional')],
       [where('userType', 'in', PROFESSIONAL_USER_TYPES)],
-      [where('mode', '==', 'professional')],
     ] as QueryConstraint[][];
   }
   if (userType === 'business') {
     return [
+      [where('userType', 'in', BUSINESS_USER_TYPES), where('mode', '==', 'business')],
       [where('userType', 'in', BUSINESS_USER_TYPES)],
-      [where('mode', '==', 'business')],
     ] as QueryConstraint[][];
   }
   if (userType === 'all') {
-    return [
-      [where('userType', 'in', WORKER_USER_TYPES)],
-      [where('mode', 'in', WORKER_MODES)],
-    ] as QueryConstraint[][];
+    return [[where('userType', 'in', WORKER_USER_TYPES)]] as QueryConstraint[][];
   }
   return [[where('userType', '==', userType)]] as QueryConstraint[][];
+}
+
+function isProfilePublished(user: TelvoUser) {
+  if (user.isSuspended === true) return false;
+  if (user.isPublished === true) return true;
+  const normalized = normalizeUserType(user.userType);
+  if (normalized === 'professional' || normalized === 'both') {
+    return Boolean(user.category && user.description);
+  }
+  if (normalized === 'business') {
+    return Boolean(user.businessName && user.businessCategory);
+  }
+  return false;
 }
 
 export interface SearchFilters {
@@ -96,6 +106,7 @@ export async function searchProfessionalsOrBusinesses(
 
   const results = Array.from(docs.values())
     .filter((r) => r.isSuspended !== true)
+    .filter((r) => isProfilePublished(r))
     .filter((r) => (filters.minRating ? (r.rating || 0) >= filters.minRating : true))
     .sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
@@ -131,11 +142,11 @@ async function fetchFeaturedUsersByType(userType: 'professional' | 'business' | 
 }
 
 export async function getFeaturedProfessionals(count = 6): Promise<TelvoUser[]> {
-  return fetchFeaturedUsersByType('professional', count);
+  return fetchFeaturedUsersByType('professional', count).then((users) => users.filter(isProfilePublished));
 }
 
 export async function getFeaturedWorkers(count = 6): Promise<TelvoUser[]> {
-  return fetchFeaturedUsersByType('all', count);
+  return fetchFeaturedUsersByType('all', count).then((users) => users.filter(isProfilePublished));
 }
 
 export async function toggleFavorite(currentUserId: string, targetId: string, isFavorited: boolean) {

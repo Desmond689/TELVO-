@@ -48,6 +48,7 @@ import 'package:telvo/screens/notifications/notifications_screen.dart';
 import 'package:telvo/screens/settings/settings_screen.dart';
 import 'package:telvo/screens/profile/profile_screen.dart';
 import 'package:telvo/screens/safety/safety_screen.dart';
+import 'package:telvo/screens/safety/id_verification_screen.dart';
 import 'package:telvo/screens/safety/trusted_contacts_screen.dart';
 import 'package:telvo/screens/sos/sos_screen.dart';
 import 'package:telvo/screens/business/business_account_screen.dart';
@@ -385,6 +386,7 @@ class _MyAppState extends State<MyApp> {
                   AppRoutes.settings: (context) => const SettingsScreen(),
                   AppRoutes.profile: (context) => const ProfileScreen(),
                   AppRoutes.safety: (context) => const SafetyScreen(),
+                  AppRoutes.idVerification: (context) => const IDVerificationScreen(),
                   AppRoutes.trustedContacts: (context) =>
                       const TrustedContactsScreen(),
                   AppRoutes.sos: (context) => const SOSScreen(),

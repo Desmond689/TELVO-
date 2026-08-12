@@ -93,7 +93,7 @@ export function listenToThreads(userId: string, cb: (threads: ChatThread[]) => v
   const q = query(
     collection(db, COLLECTIONS.CHATS),
     where('participantIds', 'array-contains', userId),
-    orderBy('lastMessageTime', 'desc')
+    orderBy('lastMessageAt', 'desc')
   );
   return onSnapshot(
     q,

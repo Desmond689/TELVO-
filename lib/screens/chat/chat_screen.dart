@@ -29,8 +29,7 @@ class _ChatScreenState extends State<ChatScreen> {
   ChatThread? _thread;
   UserModel? _otherUser;
   bool _isLoading = true;
-  bool _hasMarkedDelivered = false;
-  bool _hasMarkedRead = false;
+  bool _pendingStatusUpdate = false;
 
   // Cached so the messages listener isn't torn down and resubscribed on
   // every rebuild (e.g. when AuthProvider or the other user's doc changes).
@@ -314,6 +313,34 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _updateMessageStatus(List<ChatMessage> messages, String currentUserId) {
+    if (_thread == null || _pendingStatusUpdate) return;
+
+    final incoming = messages.where((message) => message.receiverId == currentUserId).toList();
+    if (incoming.isEmpty) return;
+
+    final needsDelivered = incoming.any((message) => message.isDelivered != true);
+    final needsRead = incoming.any((message) => message.isRead != true && message.isSeen != true);
+    if (!needsDelivered && !needsRead) return;
+
+    _pendingStatusUpdate = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      try {
+        if (needsDelivered) {
+          await context.read<ChatProvider>().markAsDelivered(_thread!.id!, currentUserId);
+        }
+        if (needsRead) {
+          await context.read<ChatProvider>().markAsRead(_thread!.id!, currentUserId);
+        }
+      } catch (_) {
+        // ignore errors; status syncing is best-effort
+      } finally {
+        _pendingStatusUpdate = false;
+      }
+    });
+  }
+
   String _resolveReceiverId(String currentUserId) {
     if (_thread == null) return '';
     final participantIds = _thread!.participantIds;
@@ -539,18 +566,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 final messages = snapshot.data!;
 
-                if (!_hasMarkedDelivered && userId != null && messages.isNotEmpty) {
-                  _hasMarkedDelivered = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    context.read<ChatProvider>().markAsDelivered(_thread!.id!, userId);
-                  });
-                }
-
-                if (!_hasMarkedRead && userId != null && messages.isNotEmpty) {
-                  _hasMarkedRead = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    context.read<ChatProvider>().markAsRead(_thread!.id!, userId);
-                  });
+                if (userId != null && messages.isNotEmpty) {
+                  _updateMessageStatus(messages, userId);
                 }
 
                 if (messages.isEmpty) {
@@ -867,10 +884,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   if (isMe) ...[
                     const SizedBox(width: 6),
-                    Text(
-                      statusText,
-                      style: TextStyle(fontSize: 12, color: statusColor),
-                    ),
+                    ..._buildStatusIcons(message),
                   ],
                 ],
               ),
@@ -881,20 +895,21 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
-  String _statusLabel(ChatMessage m) {
-    if (m.isRead == true || m.isSeen == true) {
-      return '🔵✓✓';
+  List<Widget> _buildStatusIcons(ChatMessage m) {
+    final isRead = m.isRead == true || m.isSeen == true;
+    final isDelivered = m.isDelivered == true;
+    if (isRead) {
+      return [
+        Icon(Icons.done_all, size: 14, color: const Color(0xFF53BDEB)),
+      ];
     }
-    if (m.isDelivered == true) {
-      return '✓✓';
+    if (isDelivered) {
+      return [
+        Icon(Icons.done_all, size: 14, color: const Color(0xFF6B7280)),
+      ];
     }
-    return '✓';
-  }
-
-  Color _statusColor(ChatMessage m, Color defaultColor) {
-    if (m.isRead == true || m.isSeen == true) {
-      return const Color(0xFF53BDEB);
-    }
-    return defaultColor;
+    return [
+      Icon(Icons.done, size: 14, color: const Color(0xFF6B7280)),
+    ];
   }
 }

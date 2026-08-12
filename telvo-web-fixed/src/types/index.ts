@@ -30,6 +30,8 @@ export interface TelvoUser {
   trustedContacts: string[];
   createdAt: any;
   lastActive: any;
+  isPublished?: boolean;
+  publishedAt?: any;
   isOnline: boolean;
   fcmToken?: string;
 

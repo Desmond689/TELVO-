@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { ProgressSteps } from '@/components/ui/ProgressSteps';
 import { useAuth } from '@/contexts/AuthContext';
 import { db, COLLECTIONS } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { uploadImage } from '@/services/storageService';
 import { getCategories } from '@/services/categoryService';
 import type { ServiceCategory } from '@/types';
@@ -61,6 +61,8 @@ export function Onboarding() {
       const urls = await Promise.all(portfolio.map((f, i) => uploadImage(f, `portfolio/${profile.id}/${Date.now()}_${i}_${f.name}`)));
       await updateDoc(doc(db, COLLECTIONS.USERS, profile.id), {
         portfolioPhotos: [...portfolioUrls, ...urls],
+        isPublished: true,
+        publishedAt: serverTimestamp(),
       });
       navigate('/dashboard/professional');
     } finally {

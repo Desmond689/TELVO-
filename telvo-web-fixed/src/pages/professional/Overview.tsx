@@ -28,11 +28,16 @@ export function ProfessionalOverview() {
   const completed = myJobs?.filter((j) => ['completed', 'confirmed', 'paid', 'reviewed'].includes(j.status)) || [];
   const earnings = completed.reduce((sum, j) => sum + (j.finalPrice || 0) * 0.9, 0);
 
-  if (!profile?.category) {
+  if (!profile?.category || !profile?.isPublished) {
+    const label = !profile?.category ? 'Complete your professional profile' : 'Publish your professional profile';
+    const description = !profile?.category
+      ? 'Finish onboarding to start receiving job requests.'
+      : 'Publish your profile so customers can find you and request your services.';
+
     return (
       <Card className="p-8 text-center max-w-md mx-auto">
-        <h2 className="font-semibold text-ink-900">Complete your professional profile</h2>
-        <p className="text-sm text-ink-500 mt-2">Finish onboarding to start receiving job requests.</p>
+        <h2 className="font-semibold text-ink-900">{label}</h2>
+        <p className="text-sm text-ink-500 mt-2">{description}</p>
         <button onClick={() => navigate('/dashboard/professional/onboarding')} className="mt-4 text-brand-600 font-semibold hover:underline">Continue onboarding →</button>
       </Card>
     );

@@ -76,6 +76,8 @@ async function ensureUserDoc(uid: string, data: Partial<TelvoUser>) {
       isEmailVerified: false,
       isIdVerified: false,
       isSelfieVerified: false,
+      isPublished: false,
+      publishedAt: null,
       trustedContacts: [],
       isOnline: true,
       rating: 0,
