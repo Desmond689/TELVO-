@@ -794,9 +794,6 @@ class _MessageBubble extends StatelessWidget {
         ? (isDark ? Colors.white70 : Colors.black54)
         : (isDark ? Colors.white54 : Colors.black54);
 
-    final statusColor = _statusColor(message, timeColor);
-    final statusText = _statusLabel(message);
-
     final time = message.timestamp ?? DateTime.now();
     final timeStr =
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';

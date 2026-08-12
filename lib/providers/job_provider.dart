@@ -198,6 +198,47 @@ class JobProvider extends ChangeNotifier {
     }
   }
 
+  Future<JobModel?> updateJob(JobModel job) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      if (job.id == null || job.id!.isEmpty) {
+        throw Exception('Job ID is required to update a job.');
+      }
+
+      final docRef = _firestore.collection('jobs').doc(job.id);
+      final existingDoc = await docRef.get();
+      if (!existingDoc.exists) {
+        throw Exception('Job not found.');
+      }
+
+      final data = job.toMap();
+      data['createdAt'] = existingDoc.data()?['createdAt'] ?? FieldValue.serverTimestamp();
+      if (job.category != null && job.category!.trim().isNotEmpty) {
+        data['category'] = job.category!.trim();
+        data['categoryNormalized'] = job.category!.trim().toLowerCase();
+      }
+      await docRef.update(data);
+
+      final updatedDoc = await docRef.get();
+      final updatedJob = JobModel.fromMap({...updatedDoc.data() ?? {}, 'id': updatedDoc.id});
+
+      final idx = _jobs.indexWhere((j) => j.id == updatedJob.id);
+      if (idx != -1) {
+        _jobs[idx] = updatedJob;
+      }
+
+      _setLoading(false);
+      notifyListeners();
+      return updatedJob;
+    } catch (e) {
+      _setError(getFriendlyErrorMessage(e));
+      _setLoading(false);
+      return null;
+    }
+  }
+
   /// Attaches uploaded photo URLs to a job after creation (photos are
   /// uploaded to Storage using the job's own ID as the folder name, so the
   /// job must exist first).

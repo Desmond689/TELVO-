@@ -33,6 +33,7 @@ class _JobPostScreenState extends State<JobPostScreen> {
   String? _selectedBusinessId;
   String? _selectedCategory;
   String? _selectedUrgency;
+  JobModel? _existingJob;
   List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
   final StorageService _storageService = StorageService();
@@ -56,13 +57,24 @@ class _JobPostScreenState extends State<JobPostScreen> {
     } else if (args is JobPostArguments) {
       _selectedProfessionalId = args.professionalId;
       _selectedBusinessId = args.businessId;
+    } else if (args is JobModel) {
+      _existingJob = args;
+      _selectedProfessionalId = args.professionalId;
+      _selectedBusinessId = args.businessId;
+      _selectedCategory = args.category;
+      _selectedUrgency = args.urgency;
+      _descriptionController.text = args.description ?? '';
+      _budgetController.text = args.budget?.toString() ?? '';
+      _addressController.text = args.address ?? '';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Post a Job')),
+      appBar: AppBar(
+        title: Text(_existingJob == null ? 'Post a Job' : 'Edit Job'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -479,19 +491,22 @@ class _JobPostScreenState extends State<JobPostScreen> {
     try {
       final jobProvider = context.read<JobProvider>();
 
-      // Create the job first so we have an ID to namespace uploaded photos.
+      // Create or update the job object.
       var job = JobModel(
+        id: _existingJob?.id,
+        id: _existingJob?.id,
         customerId: customerId,
         professionalId: _selectedProfessionalId,
         businessId: _selectedBusinessId,
         category: _selectedCategory,
         description: _descriptionController.text.trim(),
+        photos: _existingJob?.photos,
         budget: double.tryParse(_budgetController.text.trim()),
         address: _addressController.text.trim(),
         urgency: _selectedUrgency,
         isEmergency: _selectedUrgency == 'Emergency',
-        createdAt: DateTime.now(),
-        status: 'posted',
+        createdAt: _existingJob?.createdAt ?? DateTime.now(),
+        status: _existingJob?.status ?? 'posted',
       );
 
       // Attempt to attach current location to the job for proximity matching
@@ -512,10 +527,12 @@ class _JobPostScreenState extends State<JobPostScreen> {
         }
       } catch (_) {}
 
-      final createdJob = await jobProvider.postJob(job);
+      final createdJob = _existingJob == null
+          ? await jobProvider.postJob(job)
+          : await jobProvider.updateJob(job);
 
       if (jobProvider.error != null || createdJob == null) {
-        throw Exception(jobProvider.error ?? 'Could not create job');
+        throw Exception(jobProvider.error ?? 'Could not save job');
       }
 
       if (createdJob.id != null && _selectedImages.isNotEmpty) {
@@ -576,9 +593,9 @@ class _JobPostScreenState extends State<JobPostScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Job Posted!',
-                  style: TextStyle(
+                Text(
+                  _existingJob == null ? 'Job Posted!' : 'Job Updated!',
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'Poppins',
