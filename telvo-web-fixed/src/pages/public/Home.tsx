@@ -84,9 +84,9 @@ export function Home() {
                 <ShieldCheck size={14} /> Built for Cameroon
               </span>
               <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-ink-900 animate-slide-up">
-                Trusted workers.
+                TELVO — Trusted Workers.
                 <br />
-                <span className="text-brand-500">Real solutions.</span>
+                <span className="text-brand-500">Real Solutions.</span>
               </h1>
               <p className="mt-5 text-lg text-ink-500 max-w-xl mx-auto lg:mx-0 animate-slide-up">
                 Find trusted professionals and businesses near you for the services you need.
