@@ -3,17 +3,16 @@ export function About() {
     <div className="container-page py-16 max-w-3xl">
       <h1 className="text-3xl sm:text-4xl font-extrabold text-ink-900">About TELVO</h1>
       <p className="text-ink-500 mt-4 leading-relaxed">
-        TELVO connects customers across Cameroon with trusted professionals and businesses — from plumbers and electricians
-        to cleaners and construction crews. Our mission is simple: make it easy to find reliable help and get real work done,
-        without the guesswork.
+        TELVO is a Cameroon-focused platform that connects people who need work done with trusted professionals who can do it.
+        Customers can find, compare, chat, hire, and review professionals, while professionals can find jobs and offer services.
       </p>
       <p className="text-ink-500 mt-4 leading-relaxed">
-        We started in Yaoundé and Douala with a simple belief — that finding trustworthy help shouldn't depend on who you
-        know. Every professional on TELVO can be verified, rated, and reviewed, so you can hire with confidence.
+        Founder and Developer: <strong>Tenkou Desmond Godwill</strong>.
+        TELVO was founded on <strong>July 15, 2026</strong> in <strong>Buea, Cameroon</strong> and serves customers and professionals across Cameroon.
       </p>
       <p className="text-ink-500 mt-4 leading-relaxed">
-        TELVO is built for Cameroon first, with support for Yaoundé, Douala, Buea, Limbe, Bamenda, Bafoussam, Kribi, and
-        Garoua — and designed to grow across the region.
+        TELVO covers professional services including plumbing, electrical work, construction, cleaning, mechanics, repairs, beauty, technology, design, and other professional services.
+        Professionals on the platform are given a verified status after their identity and submitted information are checked.
       </p>
     </div>
   );
