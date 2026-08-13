@@ -158,6 +158,35 @@ export function Messages() {
       </Card>
 
       <Card className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile: horizontal thread list so users can quickly switch conversations */}
+        <div className="sm:hidden border-b border-ink-100">
+          <div className="overflow-x-auto no-scrollbar px-3 py-2 flex items-center gap-3">
+            {filteredThreads.map((t) => {
+              const otherId = t.participantIds.find((p) => p !== currentUserId);
+              const other = otherId ? participants[otherId] : undefined;
+              const isActive = activeChatId === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveChatId(t.id)}
+                  className={`flex-shrink-0 w-auto min-w-[6rem] flex items-center gap-2 px-3 py-2 rounded-xl ${isActive ? 'bg-brand-50' : 'bg-white'} border border-ink-100`}
+                >
+                  <span className="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center overflow-hidden">
+                    {other?.profilePhoto ? (
+                      <img src={other.profilePhoto} alt={other.fullName || 'User'} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-sm font-bold">{other?.fullName?.[0] || '?'}</span>
+                    )}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-ink-900 truncate" style={{maxWidth: 120}}>{other?.fullName || 'User'}</div>
+                    <div className="text-xs text-ink-500 truncate">{t.lastMessage || 'No messages'}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {activeChatId ? (
           <>
             <div className="px-4 py-3 border-b border-ink-100">

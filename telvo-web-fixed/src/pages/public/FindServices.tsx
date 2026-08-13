@@ -18,7 +18,7 @@ import type { ServiceCategory } from '@/types';
 import { formatXAF } from '@/utils/format';
 import { auth } from '@/lib/firebase';
 
-const TELVO_APP_DOWNLOAD_URL = 'https://github.com/Desmond689/TELVO-/releases/download/v1.0.0/app-release.apk';
+const TELVO_APP_DOWNLOAD_URL = 'https://github.com/Desmond689/TELVO-/releases/download/1.1.0/app-release.apk';
 
 export function FindServices() {
   const [params, setParams] = useSearchParams();

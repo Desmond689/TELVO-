@@ -98,6 +98,25 @@ export function Home() {
                 </Button>
                 <Button size="lg" variant="outline" onClick={() => navigate('/become-a-professional')}>
                   Offer Your Services
+              {/* Mobile download CTA: prominent and visible */}
+              <div className="sm:hidden mt-4">
+                <div className="bg-brand-500 text-white rounded-2xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold">Get the TELVO app</div>
+                    <div className="text-xs opacity-90">Post jobs, chat, and track work from your phone.</div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <a
+                      href="https://github.com/Desmond689/TELVO-/releases/download/1.1.0/app-release.apk"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 bg-white text-brand-600 font-semibold px-4 py-2 rounded-lg shadow-sm"
+                    >
+                      Download APK
+                    </a>
+                  </div>
+                </div>
+              </div>
                 </Button>
               </div>
 

@@ -6,7 +6,7 @@ import clsx from 'clsx';
 // we fall back to the direct GitHub APK URL so users can still download.
 const APP_STORE_URL = import.meta.env.VITE_APP_STORE_URL as string | undefined;
 const PLAY_STORE_URL = import.meta.env.VITE_PLAY_STORE_URL as string | undefined;
-const TELVO_APK_URL = (import.meta.env.VITE_TELVO_APK_URL || 'https://github.com/Desmond689/TELVO-/releases/download/v1.0.0/app-release.apk') as string;
+const TELVO_APK_URL = (import.meta.env.VITE_TELVO_APK_URL || 'https://github.com/Desmond689/TELVO-/releases/download/1.1.0/app-release.apk') as string;
 
 export function DownloadAppButtons({ variant = 'dark', size = 'md' }: { variant?: 'dark' | 'light'; size?: 'sm' | 'md' }) {
   const base = clsx(
