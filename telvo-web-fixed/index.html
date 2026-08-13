@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#00C853" />
     <meta name="color-scheme" content="light" />
     <title>TELVO — Trusted Workers. Real Solutions.</title>
-    <meta name="description" content="TELVO connects customers with trusted workers, professionals, and businesses in Cameroon for real local services like home repair, delivery, and handyman support." />
+    <meta name="description" content="TELVO connects customers with trusted professionals and service providers across Cameroon. Find services, hire professionals, and get real solutions." />
     <meta name="keywords" content="TELVO, Cameroon services, trusted workers, professionals, local services" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://telvo-mu.vercel.app/" />
@@ -16,12 +16,13 @@
     <meta property="og:site_name" content="TELVO" />
     <meta property="og:title" content="TELVO — Trusted workers. Real solutions." />
     <meta property="og:description" content="Find trusted professionals and businesses near you for the services you need." />
-    <meta property="og:image" content="/og-image.png" />
-    <meta property="og:url" content="https://telvo.com/" />
+    <meta property="og:image" content="https://telvo-mu.vercel.app/icons/icon-512.png" />
+    <meta property="og:url" content="https://telvo-mu.vercel.app/" />
     <meta property="og:locale" content="en_CM" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="TELVO — Trusted workers. Real solutions." />
     <meta name="twitter:description" content="Find trusted professionals and businesses near you for the services you need." />
+    <meta name="twitter:image" content="https://telvo-mu.vercel.app/icons/icon-512.png" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -33,12 +34,25 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "TELVO",
-      "description": "Service marketplace connecting customers with trusted professionals and businesses in Cameroon.",
-      "url": "https://telvo.com",
-      "areaServed": "CM",
-      "slogan": "Trusted workers. Real solutions."
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "name": "TELVO",
+          "url": "https://telvo-mu.vercel.app/",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://telvo-mu.vercel.app/find-services?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Organization",
+          "name": "TELVO",
+          "url": "https://telvo-mu.vercel.app/",
+          "description": "Service marketplace connecting customers with trusted professionals and businesses in Cameroon.",
+          "logo": "https://telvo-mu.vercel.app/icons/icon-192.png"
+        }
+      ]
     }
     </script>
   </head>
